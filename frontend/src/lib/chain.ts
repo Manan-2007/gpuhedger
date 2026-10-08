@@ -4,6 +4,8 @@ import { foundry, monadTestnet } from "viem/chains";
 const envChainId = Number(import.meta.env.VITE_CHAIN_ID || monadTestnet.id);
 const envRpc = import.meta.env.VITE_MONAD_RPC_URL as string | undefined;
 const envExplorer = import.meta.env.VITE_EXPLORER_URL as string | undefined;
+// testnet.monadexplorer.com (viem's default) now 308-redirects here; link to it directly. Checked 2026-10-09.
+const MONAD_TESTNET_EXPLORER = "https://testnet.monadvision.com";
 
 function buildChain(): Chain {
   if (envChainId === foundry.id) {
@@ -18,8 +20,8 @@ function buildChain(): Chain {
     rpcUrls: { default: { http: [envRpc || monadTestnet.rpcUrls.default.http[0]] } },
     blockExplorers: {
       default: {
-        name: "Monad Explorer",
-        url: envExplorer || monadTestnet.blockExplorers.default.url,
+        name: "MonadVision",
+        url: envExplorer || MONAD_TESTNET_EXPLORER,
       },
     },
   });

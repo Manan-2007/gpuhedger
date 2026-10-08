@@ -7,7 +7,7 @@ import { addresses } from "../contracts/addresses";
 import { activeChain, explorerUrl } from "../lib/chain";
 import type { OptionKind } from "../types/options";
 import { formatPrice } from "../utils/formatters";
-import { ROADMAP } from "./LandingPage";
+import { ROADMAP } from "../data/roadmap";
 
 const TOC = [
   ["overview", "Overview"],

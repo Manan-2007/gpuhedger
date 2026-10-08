@@ -5,7 +5,7 @@ import type { OptionSeries } from "../types/options";
 import { useUSDC, useUSDCActions, useMonBalance } from "../hooks/useUSDC";
 import { isActive, useOptionActions } from "../hooks/useOption";
 import { useAdminRoles } from "../hooks/useProtocol";
-import { calculateCappedOptionPrice, summarizeTrade, yearsUntil } from "../utils/optionsPricing";
+import { calculateCappedOptionPrice, calculateIntrinsicValue, isStalePremium, summarizeTrade, yearsUntil } from "../utils/optionsPricing";
 import { formatDate, formatNumber, formatPrice, formatTenor, formatUsd } from "../utils/formatters";
 import { MONAD_FAUCET_URL, isLocalChain } from "../lib/chain";
 import { ConnectButton, SwitchNetworkButton, useWrongNetwork } from "./WalletButton";
@@ -61,6 +61,8 @@ export function TradePanel({ series, spot, volatility, contracts, onContractsCha
   );
 
   const active = isActive(series);
+  const stale = active && isStalePremium(series.kind, spot, series.strike, series.premium, series.maxPayoutPerUnit);
+  const exerciseNow = calculateIntrinsicValue(series.kind, spot, series.strike, series.maxPayoutPerUnit);
   const overCapacity = qty > series.availableContracts;
   const insufficientUsdc = usdc.balanceRaw !== undefined && usdc.balanceRaw < costRaw;
   const needsApproval = usdc.allowanceRaw < costRaw;
@@ -200,6 +202,26 @@ export function TradePanel({ series, spot, volatility, contracts, onContractsCha
             <span className="text-fg">{formatUsd(summary.collateralBacking)} <span className="text-pos" aria-label="fully collateralized">✓</span></span>
           </RiskCell>
         </dl>
+
+        {stale && (
+          <div role="alert" className="mt-4 rounded-lg border border-warn/50 bg-warn/[0.08] p-3.5">
+            <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-warn">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" aria-hidden>
+                <circle cx="12" cy="12" r="9" />
+                <path d="M12 7v6M12 16.5h.01" />
+              </svg>
+              Stale premium
+            </div>
+            <p className="mt-2 text-xs leading-relaxed text-fg">
+              This option already pays <span className="num font-semibold">{formatPrice(exerciseNow)}/GPU-h</span> if exercised now, but its
+              premium is still <span className="num font-semibold">{formatPrice(series.premium)}/GPU-h</span>. Premiums are fixed when a series
+              is written and don't follow the oracle, so this price is out of date.
+            </p>
+            <p className="mt-1.5 text-[11px] leading-relaxed text-muted">
+              Known limitation of this hackathon build (no dynamic pricing yet). On a production market this order would be repriced.
+            </p>
+          </div>
+        )}
 
         <div className="mt-4">
           <RiskDisclosure kind={series.kind} maxLoss={summary.maxLoss} accepted={accepted} onAcceptedChange={setAccepted} />

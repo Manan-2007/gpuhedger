@@ -5,17 +5,27 @@ import { addressUrl, txUrl } from "../lib/chain";
 import { formatDuration, formatSignedUsd, shortAddress, shortHash, timeAgo } from "../utils/formatters";
 import { useNow } from "../hooks/useNow";
 
+/** Mark: a GPU die carrying a capped payoff curve (flat, then protected, then capped): the product in one glyph. */
+export function LogoMark({ size = 28, className = "" }: { size?: number; className?: string }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 32 32" aria-hidden className={className}>
+      <path
+        d="M11 2v3M16 2v3M21 2v3M11 27v3M16 27v3M21 27v3M2 11h3M2 16h3M2 21h3M27 11h3M27 16h3M27 21h3"
+        stroke="var(--color-primary)"
+        strokeWidth="2"
+        strokeLinecap="round"
+      />
+      <rect x="5" y="5" width="22" height="22" rx="5" fill="var(--color-primary)" />
+      <path d="M9 20H14L18.5 12.5H23" fill="none" stroke="var(--color-primary-ink)" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
 export function Logo({ className = "" }: { className?: string }) {
   return (
     <Link to="/" className={`flex items-center gap-2.5 ${className}`} aria-label="GpuHedger home">
-      <svg width="26" height="26" viewBox="0 0 32 32" aria-hidden>
-        <rect x="4" y="4" width="24" height="24" rx="4" fill="none" stroke="var(--color-primary)" strokeWidth="2.2" />
-        <path d="M9 21l5-6 4 4 5-8" fill="none" stroke="var(--color-primary)" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
-        <path d="M4 11h-2M4 16h-2M4 21h-2M28 11h2M28 16h2M28 21h2" stroke="var(--color-dim)" strokeWidth="1.6" />
-      </svg>
-      <span className="font-heading text-[17px] font-bold tracking-tight">
-        Gpu<span className="text-primary">Hedger</span>
-      </span>
+      <LogoMark />
+      <span className="font-heading text-[18px] font-extrabold tracking-[-0.02em] text-fg">GpuHedger</span>
     </Link>
   );
 }

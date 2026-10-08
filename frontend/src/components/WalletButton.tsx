@@ -41,8 +41,12 @@ export function ConnectButton({ className = "", label = "CONNECT WALLET" }: { cl
   const list = discovered.length > 0 ? discovered : connectors;
   const hasWallet = typeof window !== "undefined" && (Boolean((window as { ethereum?: unknown }).ethereum) || discovered.length > 0);
 
+  const [showError, setShowError] = useState(false);
+  useEffect(() => setShowError(Boolean(error)), [error]);
+
   const onClick = () => {
-    if (list.length === 1) connect({ connector: list[0], chainId: activeChain.id });
+    // No wallet at all: explain instead of attempting a connection that can only fail.
+    if (hasWallet && list.length === 1) connect({ connector: list[0], chainId: activeChain.id });
     else setOpen((o) => !o);
   };
 
@@ -54,8 +58,8 @@ export function ConnectButton({ className = "", label = "CONNECT WALLET" }: { cl
       </button>
       {open && (
         <div className="popover absolute right-0 z-50 mt-2 w-64 p-2">
-          <div className="label px-2 py-1.5">Choose a wallet</div>
-          {list.map((c) => (
+          <div className="label px-2 py-1.5">{hasWallet ? "Choose a wallet" : "No wallet found"}</div>
+          {hasWallet && list.map((c) => (
             <button
               key={c.uid}
               onClick={() => {
@@ -69,17 +73,27 @@ export function ConnectButton({ className = "", label = "CONNECT WALLET" }: { cl
             </button>
           ))}
           {!hasWallet && (
-            <p className="px-2 py-2 text-xs text-muted">
-              No browser wallet detected. Install{" "}
-              <a className="text-secondary underline" href="https://metamask.io/download/" target="_blank" rel="noreferrer">
-                MetaMask
-              </a>{" "}
-              to trade.
-            </p>
+            <div className="space-y-2 px-2 pb-2 text-xs text-muted">
+              <p>GpuHedger needs a browser wallet to sign trades. Everything else on this site works without one.</p>
+              <p>
+                On desktop, install{" "}
+                <a className="text-secondary underline" href="https://metamask.io/download/" target="_blank" rel="noreferrer">
+                  MetaMask
+                </a>{" "}
+                and reload. On a phone, open this page in the MetaMask app's built-in browser.
+              </p>
+            </div>
           )}
         </div>
       )}
-      {error && !open && <div className="absolute right-0 mt-2 w-64 text-right text-xs text-neg">{friendlyError(error)}</div>}
+      {error && showError && !open && (
+        <div role="alert" className="popover absolute right-0 z-50 mt-2 flex w-72 items-start gap-2 p-3 text-xs">
+          <span className="text-neg">{friendlyError(error)}</span>
+          <button onClick={() => setShowError(false)} className="ml-auto text-muted hover:text-fg" aria-label="Dismiss">
+            ✕
+          </button>
+        </div>
+      )}
     </div>
   );
 }

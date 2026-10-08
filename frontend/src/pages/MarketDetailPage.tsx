@@ -10,6 +10,7 @@ import { TradePanel } from "../components/TradePanel";
 import { indicativeBid } from "../components/MarketTable";
 import { EmptyState, ExplorerLink, KeyValue, OnchainTag, OptionTypeBadge, OracleUnavailable, Skeleton } from "../components/ui";
 import { SeriesHeader } from "../components/SeriesHeader";
+import { StickyOrderBar } from "../components/StickyOrderBar";
 
 export function MarketDetailPage() {
   const { id } = useParams();
@@ -178,13 +179,7 @@ function DetailBody({ series: s, contracts, setContracts, spot, volatility, upda
       </div>
 
       {/* Mobile sticky CTA */}
-      {!expired && (
-        <div className="fixed inset-x-0 bottom-0 z-30 border-t border-line bg-bg/95 p-3 backdrop-blur lg:hidden">
-          <a href="#trade-panel" className="btn-primary w-full py-3">
-            REVIEW ORDER · {formatUsd(summary.totalPremium)}
-          </a>
-        </div>
-      )}
+      {!expired && <StickyOrderBar total={summary.totalPremium} />}
     </div>
   );
 }

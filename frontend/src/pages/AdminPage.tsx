@@ -26,7 +26,7 @@ import {
 } from "../utils/formatters";
 import { TransactionStatus } from "../components/TransactionStatus";
 import { ConnectButton, useWrongNetwork } from "../components/WalletButton";
-import { EmptyState, ExplorerLink, OnchainTag, OptionTypeBadge, SectionHeader, Spinner, StatCard } from "../components/ui";
+import { Ago, EmptyState, ExplorerLink, OnchainTag, OptionTypeBadge, SectionHeader, Spinner, StatCard } from "../components/ui";
 
 export function AdminPage() {
   const { isConnected } = useAccount();
@@ -67,7 +67,11 @@ export function AdminPage() {
         </div>
       ) : null}
 
-      <DemoScript />
+      <DemoControls enabled={canWrite && roles.isOracle} />
+
+      <div className="mt-6">
+        <DemoScript />
+      </div>
 
       <div className="mt-6 grid gap-6 xl:grid-cols-2">
         <OraclePanel enabled={canWrite && roles.isOracle} />
@@ -99,6 +103,80 @@ function Panel({ title, tag, children }: { title: string; tag?: React.ReactNode;
   );
 }
 
+const SCENARIOS = [
+  { price: 2, label: "Baseline", title: "H100 → $2.00", effect: "Reset. The $2.20 call is out of the money.", primary: false },
+  { price: 4, label: "Price spike", title: "H100 → $4.00", effect: "Compute doubles. The $2.20 call pays $1.80/GPU-h.", primary: true },
+  { price: 1.5, label: "Price drop", title: "H100 → $1.50", effect: "Compute gets cheaper. Calls expire unused; puts pay.", primary: false },
+];
+
+/** The three oracle moves the demo needs, one click each, with the live H100 price beside them. */
+function DemoControls({ enabled }: { enabled: boolean }) {
+  const { prices } = useOracle();
+  const tx = useTransaction();
+  const h100 = prices?.H100;
+  const set = (value: number) =>
+    tx.execute(`Set H100 price → ${formatPrice(value)}`, {
+      address: contracts.oracle,
+      abi: computeOracleAbi,
+      functionName: "setPrice",
+      args: [stringToBytes32("H100"), toUsdc(value)],
+    });
+
+  return (
+    <section className="panel p-4 sm:p-5" aria-labelledby="demo-controls">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+        <div>
+          <h2 id="demo-controls" className="font-semibold">Demo controls</h2>
+          <p className="mt-1 max-w-xl text-sm text-muted">
+            Move the H100 oracle price in one transaction. Every portfolio re-marks on the next block. Make sure the oracle keeper
+            script isn't running, or it will overwrite these prices.
+          </p>
+        </div>
+        <div className="shrink-0 sm:text-right">
+          <div className="label flex items-center gap-1.5 sm:justify-end">
+            <span className="pulse-dot h-1.5 w-1.5 rounded-full bg-secondary" aria-hidden />
+            H100 oracle price
+          </div>
+          <div className="num mt-1 text-3xl font-semibold">{h100 ? formatPrice(h100.price) : "—"}</div>
+          <div className="text-xs text-muted">{h100 ? <>updated <Ago timestamp={h100.updatedAt} /></> : "loading…"}</div>
+        </div>
+      </div>
+      <div className="mt-4 grid gap-3 md:grid-cols-3">
+        {SCENARIOS.map((sc) => {
+          const current = h100 !== undefined && Math.abs(h100.price - sc.price) < 1e-9;
+          return (
+            <button
+              key={sc.price}
+              onClick={() => set(sc.price)}
+              disabled={!enabled || tx.isBusy || current}
+              className={`rounded-lg border p-4 text-left transition-colors disabled:cursor-not-allowed ${
+                current
+                  ? "border-secondary/50 bg-secondary/[0.07]"
+                  : sc.primary
+                    ? "border-primary/50 bg-primary/[0.06] hover:bg-primary/[0.12] disabled:opacity-50"
+                    : "border-line-2 hover:border-line-3 hover:bg-panel-2 disabled:opacity-50"
+              }`}
+            >
+              <div className="flex items-center justify-between">
+                <span className="label">{sc.label}</span>
+                {current && <span className="chip border-secondary/40 text-secondary">Current</span>}
+              </div>
+              <div className={`num mt-2 text-xl font-semibold ${sc.primary && !current ? "text-primary" : "text-fg"}`}>{sc.title}</div>
+              <div className="mt-1 text-xs text-muted">{sc.effect}</div>
+            </button>
+          );
+        })}
+      </div>
+      {!enabled && <p className="mt-3 text-xs text-dim">Connect a wallet with ORACLE_ROLE to use these.</p>}
+      {tx.state.phase !== "idle" && (
+        <div className="mt-4">
+          <TransactionStatus state={tx.state} onDismiss={tx.reset} successNote={<span className="text-muted">Oracle updated onchain. Portfolios re-mark on the next block.</span>} />
+        </div>
+      )}
+    </section>
+  );
+}
+
 function DemoScript() {
   const steps = [
     ["Connect wallet", "/portfolio"],
@@ -113,7 +191,7 @@ function DemoScript() {
     ["EXERCISE → SETTLED ✓", "/portfolio"],
   ];
   return (
-    <details className="panel group p-4 sm:p-5" open>
+    <details className="panel group p-4 sm:p-5">
       <summary className="flex cursor-pointer list-none items-center justify-between">
         <span className="font-semibold">Hackathon demo flow</span>
         <span className="text-xs text-muted group-open:hidden">Show</span>
@@ -124,12 +202,12 @@ function DemoScript() {
           <li key={t}>
             {href.startsWith("#") ? (
               <a href={href} className="flex h-full gap-2 rounded-lg border border-line p-3 text-sm hover:border-line-2">
-                <span className="num text-primary">{String(i + 1).padStart(2, "0")}</span>
+                <span className="num text-dim">{String(i + 1).padStart(2, "0")}</span>
                 {t}
               </a>
             ) : (
               <Link to={href} className="flex h-full gap-2 rounded-lg border border-line p-3 text-sm hover:border-line-2">
-                <span className="num text-primary">{String(i + 1).padStart(2, "0")}</span>
+                <span className="num text-dim">{String(i + 1).padStart(2, "0")}</span>
                 {t}
               </Link>
             )}
@@ -165,18 +243,7 @@ function OraclePanel({ enabled }: { enabled: boolean }) {
   return (
     <div id="oracle" className="scroll-mt-24">
       <Panel title="Compute price oracle" tag={<OnchainTag label="ComputeOracle" />}>
-        <div className="mb-4 flex flex-wrap gap-2">
-          <span className="label self-center">Demo presets</span>
-          <button disabled={!enabled || tx.isBusy} onClick={() => setPrice("H100", 2)} className="btn-secondary px-3 py-1.5 text-xs">
-            H100 → $2.00
-          </button>
-          <button disabled={!enabled || tx.isBusy} onClick={() => setPrice("H100", 4)} className="btn-primary px-3 py-1.5 text-xs">
-            H100 → $4.00 (spike)
-          </button>
-          <button disabled={!enabled || tx.isBusy} onClick={() => setPrice("H100", 1.5)} className="btn-secondary px-3 py-1.5 text-xs">
-            H100 → $1.50
-          </button>
-        </div>
+        <p className="mb-4 text-sm text-muted">Set any GPU's price or implied volatility directly. For the demo, use the scenario buttons above.</p>
         <div className="space-y-3">
           {GPU_SYMBOLS.map((gpu) => {
             const p = prices?.[gpu];

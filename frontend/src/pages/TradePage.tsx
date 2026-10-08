@@ -7,8 +7,9 @@ import { OptionSelector, type Selection } from "../components/OptionSelector";
 import { PayoffChart } from "../components/PayoffChart";
 import { TradePanel } from "../components/TradePanel";
 import { EmptyState, ErrorNote, OracleUnavailable, SectionHeader, Skeleton } from "../components/ui";
-import { formatPrice, formatUsd } from "../utils/formatters";
+import { formatPrice } from "../utils/formatters";
 import { SeriesHeader } from "../components/SeriesHeader";
+import { StickyOrderBar } from "../components/StickyOrderBar";
 import { isConfigured } from "../contracts/addresses";
 
 export function TradePage() {
@@ -115,13 +116,7 @@ export function TradePage() {
         </div>
       )}
 
-      {selected && oracleReady && (
-        <div className="fixed inset-x-0 bottom-0 z-30 border-t border-line bg-bg/95 p-3 backdrop-blur lg:hidden">
-          <a href="#trade-panel" className={"btn-primary w-full py-3"}>
-            REVIEW ORDER · {formatUsd(selected.premium * selected.contractSize * contracts)}
-          </a>
-        </div>
-      )}
+      {selected && oracleReady && <StickyOrderBar total={selected.premium * selected.contractSize * contracts} />}
     </div>
   );
 }

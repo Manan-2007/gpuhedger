@@ -3,6 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import type { OptionKind, OptionSeries } from "../types/options";
 import { formatDate, formatNumber, formatPrice, formatTenor } from "../utils/formatters";
 import { indicativeBid } from "./MarketTable";
+import { isStalePremium } from "../utils/optionsPricing";
 
 /** Series expiring on the same UTC calendar day share a chain. */
 export const expiryKey = (expiration: number) => new Date(expiration * 1000).toISOString().slice(0, 10);
@@ -99,9 +100,9 @@ export function OptionsChain({ series, spot, gpu }: { series: OptionSeries[]; sp
               <Fragment key={`${r.strike}-${i}`}>
                 {i === markerAt && marker(9)}
                 <tr className="border-b border-line/70 last:border-0">
-                  <Side s={r.call} itm={isItm("CALL", r.strike, spot)} align="call" />
+                  <Side s={r.call} itm={isItm("CALL", r.strike, spot)} spot={spot} align="call" />
                   <td className="num bg-bg-deep/60 px-4 py-3 text-center text-base font-semibold">{formatPrice(r.strike)}</td>
-                  <Side s={r.put} itm={isItm("PUT", r.strike, spot)} align="put" />
+                  <Side s={r.put} itm={isItm("PUT", r.strike, spot)} spot={spot} align="put" />
                 </tr>
               </Fragment>
             ))}
@@ -130,13 +131,14 @@ export function OptionsChain({ series, spot, gpu }: { series: OptionSeries[]; sp
         <span className="flex items-center gap-1.5"><span className="h-3 w-3 rounded-sm border border-pos/40 bg-pos/15" /> In the money</span>
         <span className="flex items-center gap-1.5"><span className="h-px w-4 bg-secondary" /> Live oracle price</span>
         <span>Ask = executable onchain premium per GPU-hour · 1 contract = {formatNumber(series[0]?.contractSize ?? 100)} GPU-hours</span>
+        <span className="flex items-center gap-1.5"><StaleDot /> Stale premium (below exercise value)</span>
         <span>*Bid is indicative (simulated)</span>
       </div>
     </div>
   );
 }
 
-function Side({ s, itm, align }: { s?: OptionSeries; itm: boolean; align: "call" | "put" }) {
+function Side({ s, itm, spot, align }: { s?: OptionSeries; itm: boolean; spot?: number; align: "call" | "put" }) {
   const navigate = useNavigate();
   const tint = s && itm ? "bg-pos/[0.11]" : "";
   if (!s) {
@@ -151,15 +153,20 @@ function Side({ s, itm, align }: { s?: OptionSeries; itm: boolean; align: "call"
     );
   }
   const go = () => navigate(`/trade?series=${s.id}`);
+  const stale = spot !== undefined && isStalePremium(s.kind, spot, s.strike, s.premium, s.maxPayoutPerUnit);
   const ask = (
-    <Link
-      to={`/trade?series=${s.id}`}
-      aria-label={`Buy ${s.gpu} ${s.kind} strike ${formatPrice(s.strike)}, premium ${formatPrice(s.premium)} per GPU-hour`}
-      title={`${formatPrice(s.premium * s.contractSize)} per contract`}
-      className="num inline-flex min-w-[4.5rem] justify-center rounded-md border border-line-2 bg-panel-2 px-2.5 py-1 font-semibold text-fg transition-colors hover:border-primary/70 hover:bg-primary/10 hover:text-primary"
-    >
-      {formatPrice(s.premium)}
-    </Link>
+    <span className="inline-flex items-center gap-1.5">
+      {stale && align === "call" && <StaleDot />}
+      <Link
+        to={`/trade?series=${s.id}`}
+        aria-label={`Buy ${s.gpu} ${s.kind} strike ${formatPrice(s.strike)}, premium ${formatPrice(s.premium)} per GPU-hour`}
+        title={`${formatPrice(s.premium * s.contractSize)} per contract`}
+        className="num inline-flex min-w-[4.5rem] justify-center rounded-md border border-line-2 bg-panel-2 px-2.5 py-1 font-semibold text-fg transition-colors hover:border-primary/70 hover:bg-primary/10 hover:text-primary"
+      >
+        {formatPrice(s.premium)}
+      </Link>
+      {stale && align === "put" && <StaleDot />}
+    </span>
   );
   const td = (key: string, className: string, content: React.ReactNode) => (
     <td key={key} className={`${className} ${tint} cursor-pointer`} onClick={go}>
@@ -213,7 +220,10 @@ function MobileSide({ rows, side, spot, gpu, markerAt }: { rows: Row[]; side: Op
                   </div>
                 </div>
                 <div className="text-right">
-                  <div className="num font-semibold">{formatPrice(s!.premium)}</div>
+                  <div className="num flex items-center justify-end gap-1.5 font-semibold">
+                    {spot !== undefined && isStalePremium(side, spot, r.strike, s!.premium, s!.maxPayoutPerUnit) && <StaleDot />}
+                    {formatPrice(s!.premium)}
+                  </div>
                   <div className="num text-[11px] text-dim">{formatPrice(s!.premium * s!.contractSize)}/contract</div>
                 </div>
               </Link>
@@ -223,6 +233,18 @@ function MobileSide({ rows, side, spot, gpu, markerAt }: { rows: Row[]; side: Op
       })}
       {!markerShown && spotLine}
     </ul>
+  );
+}
+
+function StaleDot() {
+  return (
+    <span
+      className="grid h-4 w-4 shrink-0 place-items-center rounded-full border border-warn/60 bg-warn/15 text-[10px] font-bold text-warn"
+      title="Stale premium: the option pays more if exercised now than it costs. Premiums are fixed when a series is written."
+      aria-label="Stale premium"
+    >
+      !
+    </span>
   );
 }
 

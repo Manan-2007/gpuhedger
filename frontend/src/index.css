@@ -162,13 +162,6 @@
   @apply rounded-md px-3 py-1.5 text-xs font-semibold tracking-wide transition-colors;
 }
 
-.grid-bg {
-  background-image:
-    linear-gradient(to right, var(--color-chart-grid) 1px, transparent 1px),
-    linear-gradient(to bottom, var(--color-chart-grid) 1px, transparent 1px);
-  background-size: 48px 48px;
-}
-
 @keyframes pulse-dot {
   0%,
   100% {
@@ -180,18 +173,6 @@
 }
 .pulse-dot {
   animation: pulse-dot 1.6s ease-in-out infinite;
-}
-
-@keyframes ticker {
-  from {
-    transform: translateX(0);
-  }
-  to {
-    transform: translateX(-50%);
-  }
-}
-.ticker-track {
-  animation: ticker 40s linear infinite;
 }
 
 @keyframes flash-pos {
@@ -207,7 +188,6 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .ticker-track,
   .pulse-dot,
   .flash-pos {
     animation: none;

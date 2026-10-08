@@ -7,6 +7,7 @@ import type { Hash } from "viem";
 import { computeFuturesAbi, optionFactoryAbi } from "../contracts/abis";
 import { contracts, hasFutures, isConfigured } from "../contracts/addresses";
 import { useProtocolStats, useRecentActivity } from "../hooks/useProtocol";
+import { useBlockTime } from "../hooks/useBlockTime";
 import { useVault } from "../hooks/useVault";
 import { useMarkets } from "../hooks/useOption";
 import { activeChain } from "../lib/chain";
@@ -43,12 +44,26 @@ function useActivityTxHashes(activity: ReturnType<typeof useRecentActivity>["act
   });
 }
 
+const EVENT_STYLE: Record<string, string> = {
+  Purchase: "border-secondary/40 text-secondary",
+  Exercise: "border-pos/40 bg-pos/10 text-pos",
+  Claim: "border-pos/40 bg-pos/10 text-pos",
+  "Series created": "border-line-2 text-muted",
+  Expiry: "border-line-2 text-dim",
+};
+const EVENT_LABEL: Record<string, string> = { "Series created": "Series listed", Expiry: "Settled at expiry" };
+
+function EventChip({ kind }: { kind: string }) {
+  return <span className={`chip whitespace-nowrap ${EVENT_STYLE[kind] ?? "border-line-2 text-muted"}`}>{EVENT_LABEL[kind] ?? kind}</span>;
+}
+
 export function ActivityPage() {
   const { stats } = useProtocolStats();
   const { activity } = useRecentActivity(100);
   const { series } = useMarkets();
   const vault = useVault();
   const hashes = useActivityTxHashes(activity);
+  const { blockTime } = useBlockTime();
   const futuresPositions = useReadContract({ address: contracts.futures, abi: computeFuturesAbi, functionName: "totalPositions", query: { enabled: hasFutures, refetchInterval: 5_000 } });
   const futuresNotional = useReadContract({ address: contracts.futures, abi: computeFuturesAbi, functionName: "totalNotional", query: { enabled: hasFutures, refetchInterval: 5_000 } });
 
@@ -92,6 +107,13 @@ export function ActivityPage() {
         <StatCard label="Futures positions" value={formatNumber(Number(futuresPositions.data ?? 0n))} sub={`${formatUsd(fromUsdc(futuresNotional.data), 0)} notional`} />
         <StatCard label="LP vault NAV" value={formatUsd(vault.tvl, 0)} sub={`${formatUsd(vault.premiumsEarned)} premiums earned`} />
       </div>
+      {blockTime && (
+        <p className="mt-3 text-xs text-muted">
+          {activeChain.name} block time, measured from the chain:{" "}
+          <span className="num font-semibold text-fg">{blockTime.ms.toLocaleString("en-US")} ms</span> average over the last{" "}
+          {blockTime.blocks} blocks (to #{blockTime.latest.toString()}).
+        </p>
+      )}
 
       <div className="panel mt-6 p-4 sm:p-5">
         <h2 className="font-semibold">Cumulative premium volume</h2>
@@ -103,8 +125,8 @@ export function ActivityPage() {
               <AreaChart data={cumulative} margin={{ top: 8, right: 8, bottom: 0, left: 0 }}>
                 <defs>
                   <linearGradient id="vol" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="var(--color-primary)" stopOpacity={0.25} />
-                    <stop offset="100%" stopColor="var(--color-primary)" stopOpacity={0} />
+                    <stop offset="0%" stopColor="var(--color-secondary)" stopOpacity={0.25} />
+                    <stop offset="100%" stopColor="var(--color-secondary)" stopOpacity={0} />
                   </linearGradient>
                 </defs>
                 <CartesianGrid stroke="var(--color-chart-grid)" vertical={false} />
@@ -121,7 +143,7 @@ export function ActivityPage() {
                     ) : null
                   }
                 />
-                <Area type="stepAfter" dataKey="volume" stroke="var(--color-primary)" strokeWidth={2} fill="url(#vol)" isAnimationActive={false} />
+                <Area type="stepAfter" dataKey="volume" stroke="var(--color-secondary)" strokeWidth={2} fill="url(#vol)" isAnimationActive={false} />
               </AreaChart>
             </ResponsiveContainer>
           )}
@@ -147,7 +169,7 @@ export function ActivityPage() {
                 return (
                   <tr key={i} className="border-b border-line/60 last:border-0">
                     <td className="px-4 py-2.5 text-xs text-muted">{formatDateTime(a.timestamp)}</td>
-                    <td className={`px-4 py-2.5 font-medium ${a.kind === "Exercise" || a.kind === "Claim" ? "text-pos" : a.kind === "Purchase" ? "text-secondary" : ""}`}>{a.kind}</td>
+                    <td className="px-4 py-2.5"><EventChip kind={a.kind} /></td>
                     <td className="num px-4 py-2.5"><Link to={`/markets/${a.seriesId}`} className="hover:underline">#{a.seriesId}</Link></td>
                     <td className="px-4 py-2.5"><ExplorerLink address={a.account} label={shortAddress(a.account)} /></td>
                     <td className="num px-4 py-2.5">{formatNumber(a.contracts)}</td>
