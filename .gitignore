@@ -1,0 +1,26 @@
+# Secrets — never commit
+.env
+.env.*
+!.env.example
+*.key
+keystore/
+
+# Dependencies & builds
+node_modules/
+frontend/dist/
+
+# Foundry
+contracts/out/
+contracts/cache/
+contracts/broadcast/*/31337/
+contracts/broadcast/**/dry-run/
+
+# Local-only deployments (Anvil)
+contracts/deployments/31337.json
+frontend/src/contracts/deployments/31337.json
+
+# OS / editors
+.DS_Store
+Thumbs.db
+.vscode/
+*.log

@@ -1,0 +1,17 @@
+{
+  "name": "gpuhedger",
+  "private": true,
+  "description": "GpuHedger — onchain options on GPU compute, built on Monad.",
+  "type": "module",
+  "scripts": {
+    "contracts:build": "cd contracts && forge build",
+    "contracts:test": "cd contracts && forge test -vv",
+    "abis": "node scripts/export-abis.mjs",
+    "demo-flow": "node scripts/demo-flow.mjs",
+    "dev": "npm --prefix frontend run dev",
+    "build": "npm --prefix frontend run build"
+  },
+  "devDependencies": {
+    "viem": "^2.21.0"
+  }
+}

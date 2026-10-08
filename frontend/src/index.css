@@ -1,0 +1,155 @@
+@import "tailwindcss";
+
+@theme {
+  --color-bg: #08090b;
+  --color-panel: #111318;
+  --color-panel-2: #171a21;
+  --color-line: #23262f;
+  --color-line-2: #2e323d;
+  --color-fg: #eef0f3;
+  --color-muted: #9097a3;
+  --color-dim: #5f6673;
+  --color-primary: #e6ff4a;
+  --color-primary-ink: #0b0c0e;
+  --color-secondary: #5ee7ff;
+  --color-pos: #32d583;
+  --color-neg: #ff5c7a;
+  --color-warn: #ffb547;
+
+  --font-sans: "Geist", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+}
+
+@layer base {
+  html {
+    color-scheme: dark;
+    -webkit-tap-highlight-color: transparent;
+  }
+  body {
+    @apply bg-bg text-fg font-sans antialiased;
+    font-feature-settings: "ss01", "cv11";
+  }
+  ::selection {
+    background: color-mix(in srgb, var(--color-primary) 35%, transparent);
+  }
+  input[type="number"]::-webkit-inner-spin-button,
+  input[type="number"]::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+  input[type="number"] {
+    -moz-appearance: textfield;
+  }
+  :focus-visible {
+    outline: 2px solid var(--color-secondary);
+    outline-offset: 2px;
+  }
+}
+
+@utility panel {
+  @apply rounded-xl border border-line bg-panel;
+}
+
+@utility label {
+  @apply text-[11px] font-medium uppercase tracking-[0.12em] text-muted;
+}
+
+@utility num {
+  @apply font-mono tabular-nums;
+}
+
+@utility btn {
+  @apply inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2.5 text-sm font-semibold tracking-wide transition-colors disabled:cursor-not-allowed disabled:opacity-40;
+}
+
+@utility btn-primary {
+  @apply btn bg-primary text-primary-ink hover:bg-[#f0ff8a];
+}
+
+@utility btn-secondary {
+  @apply btn border border-line-2 bg-panel-2 text-fg hover:border-dim hover:bg-[#1d212a];
+}
+
+@utility btn-ghost {
+  @apply btn text-muted hover:bg-panel-2 hover:text-fg;
+}
+
+@utility btn-pos {
+  @apply btn bg-pos text-primary-ink hover:brightness-110;
+}
+
+@utility btn-neg {
+  @apply btn bg-neg text-primary-ink hover:brightness-110;
+}
+
+@utility input {
+  @apply w-full rounded-lg border border-line-2 bg-bg px-3 py-2.5 font-mono text-sm text-fg tabular-nums placeholder:text-dim focus:border-secondary focus:outline-none;
+}
+
+@utility chip {
+  @apply inline-flex items-center gap-1.5 rounded-md border px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wider;
+}
+
+@utility seg {
+  @apply rounded-md px-3 py-1.5 text-xs font-semibold tracking-wide transition-colors;
+}
+
+.grid-bg {
+  background-image:
+    linear-gradient(to right, rgba(255, 255, 255, 0.035) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(255, 255, 255, 0.035) 1px, transparent 1px);
+  background-size: 48px 48px;
+}
+
+@keyframes pulse-dot {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.35;
+  }
+}
+.pulse-dot {
+  animation: pulse-dot 1.6s ease-in-out infinite;
+}
+
+@keyframes ticker {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+.ticker-track {
+  animation: ticker 40s linear infinite;
+}
+
+@keyframes flash-pos {
+  from {
+    background-color: color-mix(in srgb, var(--color-pos) 22%, transparent);
+  }
+  to {
+    background-color: transparent;
+  }
+}
+.flash-pos {
+  animation: flash-pos 1.2s ease-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ticker-track,
+  .pulse-dot,
+  .flash-pos {
+    animation: none;
+  }
+}
+
+/* Recharts tweaks */
+.recharts-cartesian-axis-tick-value {
+  font-family: var(--font-mono);
+}
+.recharts-tooltip-cursor {
+  stroke: var(--color-line-2);
+}
