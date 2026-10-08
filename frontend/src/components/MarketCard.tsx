@@ -33,7 +33,7 @@ export function MarketCard({ series: s, spot }: { series: OptionSeries; spot?: n
         </div>
       </Link>
       {live && (
-        <Link to={`/trade?series=${s.id}`} className={`${s.kind === "CALL" ? "btn-pos" : "btn-neg"} mt-3 w-full py-2 text-xs`}>
+        <Link to={`/trade?series=${s.id}`} className={"btn-primary mt-3 w-full py-2 text-xs"}>
           BUY {s.kind}
         </Link>
       )}

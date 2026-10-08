@@ -23,6 +23,8 @@ export function OptionSelector({
   const forGpuKind = series.filter((s) => s.gpu === selection.gpu && s.kind === selection.kind);
   const selected = series.find((s) => s.id === selection.seriesId);
   const strikes = [...new Set(forGpuKind.map((s) => s.strike))].sort((a, b) => a - b);
+  // Cheapest live premium at each strike, shown on the chip so prices are comparable at a glance.
+  const premiumAt = (k: number) => Math.min(...forGpuKind.filter((s) => s.strike === k).map((s) => s.premium));
   const expiries = selected ? forGpuKind.filter((s) => s.strike === selected.strike).sort((a, b) => a.expiration - b.expiration) : [];
 
   const pick = (gpu: GpuSymbol, kind: OptionKind, strike?: number) => {
@@ -34,7 +36,7 @@ export function OptionSelector({
   };
 
   return (
-    <div className="panel space-y-5 p-4 sm:p-5">
+    <div className="panel-solid space-y-5 p-4 sm:p-5">
       <Step n="01" title="Choose your GPU">
         <div className="grid grid-cols-3 gap-2">
           {GPU_SYMBOLS.map((g) => (
@@ -61,12 +63,12 @@ export function OptionSelector({
               className={`rounded-lg border px-3 py-2.5 text-left transition-colors ${
                 selection.kind === k
                   ? k === "CALL"
-                    ? "border-pos/60 bg-pos/[0.08]"
-                    : "border-neg/60 bg-neg/[0.08]"
+                    ? "border-call/60 bg-call/[0.08]"
+                    : "border-put/60 bg-put/[0.08]"
                   : "border-line hover:border-line-2"
               }`}
             >
-              <div className={`font-semibold ${k === "CALL" ? "text-pos" : "text-neg"}`}>{k}</div>
+              <div className={`font-semibold ${k === "CALL" ? "text-call" : "text-put"}`}>{k}</div>
               <div className="text-xs text-muted">{k === "CALL" ? "Protects against rising prices" : "Protects against falling prices"}</div>
             </button>
           ))}
@@ -85,9 +87,10 @@ export function OptionSelector({
                   <button
                     key={k}
                     onClick={() => pick(selection.gpu, selection.kind, k)}
-                    className={`seg num border ${selected?.strike === k ? "border-primary/60 bg-primary/10 text-primary" : "border-line text-muted hover:text-fg"}`}
+                    className={`seg num border text-left ${selected?.strike === k ? "border-primary/60 bg-primary/10 text-primary" : "border-line text-muted hover:text-fg"}`}
                   >
-                    {formatPrice(k)}
+                    <div className="text-sm">{formatPrice(k)}</div>
+                    <div className="text-[10px] font-normal opacity-80">{formatPrice(premiumAt(k))} premium</div>
                   </button>
                 ))}
               </div>

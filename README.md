@@ -58,7 +58,7 @@ Maximum loss for the buyer of a call or a put is the premium paid. Potential pro
 
 ## Why Monad
 
-- **~400ms blocks / ~800ms finality.** Buy, oracle update, exercise, and settlement each confirm in about a second. The UI shows *Order submitted → Confirming → Settled ✓* with the measured settlement time and an explorer link.
+- **Sub-second blocks.** Monad publishes ~400ms blocks and ~800ms finality; we measured **~300ms** average block time on testnet (200 blocks, 2026-10-09). Buy, oracle update, exercise, and settlement each confirm in about a second. The UI shows *Signature → Submitted → Confirming → Settled ✓* with a live stopwatch, the measured settlement time and an explorer link, and the landing and activity pages show the block time measured from the chain itself.
 - **Real-time risk.** Positions re-mark against the onchain oracle every block, and holders can exercise as soon as they're in the money.
 - **Full EVM.** Standard Solidity, OpenZeppelin, wagmi/viem, and MetaMask.
 - **Low fees.** 100-GPU-hour contracts are viable, not just million-dollar deals.
@@ -98,19 +98,27 @@ OptionFactory  ── clones ──►  ComputeOption (one per series, holds col
 
 ### Frontend (`frontend/src`)
 
+React 18 + Vite 6 + TypeScript, wagmi 2 / viem 2, Tailwind 4, Recharts. Every route is lazy-loaded.
+
 ```
-components/  Navbar, WalletButton, MarketTable, MarketCard, OptionSelector, TradePanel,
-             PayoffChart, PriceChart, PositionTable, TransactionStatus, RiskDisclosure, ui (StatCard, …)
+components/  Navbar, WalletButton, OptionsChain (strike ladder), TradePanel (order ticket), SeriesHeader,
+             PayoffChart, PriceChart, PositionCard, PositionTable, TransactionStatus, RiskDisclosure,
+             StickyOrderBar, MarketTable, OptionSelector, FuturesPositions, ui (Logo, PnlValue, StatCard, …)
 contracts/   abis/ (generated), deployments/<chainId>.json (written by deploy script), addresses.ts
-hooks/       useOption, useOracle, usePortfolio, useUSDC, useTransaction, useProtocol
-lib/         wagmi.ts, viem.ts, chain.ts, errors.ts (friendly revert messages)
-utils/       optionsPricing.ts, formatters.ts
+hooks/       useOption, useOracle, usePortfolio, useUSDC, useTransaction, useProtocol, useFutures, useVault,
+             useBlockTime (measured block time), useNow
+lib/         wagmi.ts, chain.ts, errors.ts (friendly revert/wallet messages), clock.ts (chain-aligned time)
+utils/       optionsPricing.ts, hedge.ts (hedge calculator maths), formatters.ts, *.test.ts
 types/       options.ts, markets.ts
-data/        marketData.ts (simulated market data behind a swappable provider interface)
-pages/       Landing, Markets, MarketDetail, Trade, Portfolio, Admin, Docs
+data/        marketData.ts (simulated market data behind a swappable provider interface), roadmap.ts
+pages/       Landing, Markets, MarketDetail, Trade, Hedge, Futures, Vault, Portfolio, Activity, Admin, Docs
 ```
 
-Routes are `/`, `/markets`, `/markets/:id`, `/trade`, `/portfolio`, `/admin`, and `/docs`.
+Routes: `/`, `/markets` (options chain or list), `/markets/:id`, `/trade`, `/hedge`, `/futures`, `/vault`, `/portfolio`, `/activity`, `/admin`, `/docs`.
+
+**Design.** Dark only, defined as tokens in `index.css`: lime for actions only, teal for profit / in the money / settled, red for loss, blue for information and the CALL type, purple for PUT, amber for warnings and anything simulated. Frosted-glass cards; solid surfaces wherever numbers are dense (options chain, order ticket, tables). Manrope / Inter / JetBrains Mono.
+
+**Trust details.** Max loss, break-even, capped profit and collateral are shown before every buy button. If the oracle can't be read, trading is disabled and the screen says "Oracle unavailable"; no fallback price is ever shown as real. If a series' fixed premium is below its current exercise value, the ticket shows a *Stale premium* warning. Expiry decisions follow `block.timestamp` (`lib/clock.ts`), so the UI never offers an action the contract would reject because of a skewed laptop clock.
 
 ### What is real vs. simulated
 
@@ -118,7 +126,7 @@ Routes are `/`, `/markets`, `/markets/:id`, `/trade`, `/portfolio`, `/admin`, an
 |---|---|
 | Wallet connection, MON and USDC balances | 24h / 7d price change, rental-market volume |
 | USDC faucet, approvals | Historical "market" price chart (the *Oracle updates* tab shows the real onchain history) |
-| Option series creation, purchase, exercise, settlement | Indicative bid (the ask is the real onchain premium) |
+| Option series creation, purchase, exercise, settlement, claims | Indicative bid (the ask is the real onchain premium) |
 | Oracle prices and implied volatility | |
 | Positions, open interest, protocol stats and activity | |
 
@@ -153,12 +161,31 @@ This is not institutional-grade pricing. GPU compute can't be continuously hedge
 
 ## Running locally
 
-**Prerequisites:** Node 20+, [Foundry](https://getfoundry.sh) (`curl -L https://foundry.paradigm.xyz | bash && foundryup`), and a browser wallet such as MetaMask.
+**Prerequisites:** Node 20+ and [Foundry](https://getfoundry.sh) (`curl -L https://foundry.paradigm.xyz | bash && foundryup`). MetaMask is optional locally.
+
+### One command
+
+```bash
+./start.sh            # macOS / Linux / Git Bash
+start.bat             # Windows
+```
+
+This installs dependencies if needed, starts a local chain (Anvil, 1-second blocks), deploys and seeds the contracts if they aren't there yet, runs the frontend with an auto-connected test wallet (Anvil account #0, which holds every admin role), and opens your browser. The chain is saved to `contracts/cache/anvil-state.json`, so positions survive restarts.
+
+| Option | Effect |
+|---|---|
+| `./start.sh testnet` | Frontend only, pointed at Monad testnet (needs MetaMask and `frontend/src/contracts/deployments/10143.json`) |
+| `FRESH=1 ./start.sh` | Wipe the saved local chain and redeploy |
+| `WALLET=metamask ./start.sh` | Use MetaMask instead of the auto-connected test wallet |
+| `PORT=5180 ./start.sh` / `OPEN=0 ./start.sh` | Change the port / don't open the browser |
+
+### Step by step
 
 ```bash
 git clone <repo> && cd gpuhedger
 git submodule update --init --recursive      # OpenZeppelin + forge-std
 npm install && npm --prefix frontend install
+mkdir -p contracts/deployments frontend/src/contracts/deployments   # needed on a fresh clone
 
 # 1. Contracts: build and test
 cd contracts && forge build && forge test && cd ..
@@ -188,7 +215,7 @@ For local MetaMask use, add the network *Localhost 8545* (chain ID 31337) and im
 | Chain ID | `10143` |
 | RPC | `https://testnet-rpc.monad.xyz` |
 | Currency | MON |
-| Explorer | https://testnet.monadexplorer.com |
+| Explorer | https://testnet.monadvision.com (the old testnet.monadexplorer.com redirects here) |
 | Faucet | https://faucet.monad.xyz |
 
 ```bash
@@ -240,11 +267,13 @@ CHAIN_ID=10143 RPC_URL=https://testnet-rpc.monad.xyz ORACLE_KEY=0x… node scrip
 
 - **Connecting a wallet.** Click **CONNECT** (MetaMask or any injected/EIP-6963 wallet). On the wrong network the app shows **WRONG NETWORK** and a **SWITCH TO MONAD TESTNET** button, which adds the chain if needed. The app never asks for private keys or seed phrases.
 - **Getting test USDC.** Click **GET TEST USDC** (Portfolio or trade panel) to mint 10,000 test USDC. It's labelled *Testnet only*. Gas requires testnet MON from the Monad faucet.
-- **Creating an option.** On `/admin` with the deployer wallet, pick a GPU, type, strike, expiry, size, premium (defaults to model price + 8%), cap, and capacity. Click **APPROVE COLLATERAL**, then **CREATE SERIES**. The series appears in `/markets` automatically.
-- **Buying an option.** On `/trade`, choose GPU → CALL/PUT → strike → expiry and enter a quantity. Review premium, total cost, break-even, max loss, potential profit, and the payoff chart. Acknowledge the risk disclosure, then **APPROVE USDC** (if needed) → **BUY CALL**. The status runs Signature → Submitted → Confirming → **SETTLED ✓**, with the tx hash and explorer link.
-- **Exercising an option.** In `/portfolio`, in-the-money open positions show **EXERCISE**. The contract reads the oracle, pays USDC to your wallet, and marks the position EXERCISED. After expiry, in-the-money positions show **CLAIM** instead.
-- **Transferring a hedge.** Expand a position in `/portfolio`, enter an address and click **TRANSFER**. This moves the position NFT, and with it the right to exercise or claim.
-- **Sizing a hedge.** `/hedge` takes your GPU-hours, budget and a stress price. It compares every live option and futures hedge, recommends one, and links straight to the trade.
+- **Moving the oracle.** `/admin` → **Demo controls** has one-click scenarios: *Baseline* (H100 → $2.00), *Price spike* (H100 → $4.00) and *Price drop* (H100 → $1.50). Any GPU's price and volatility can also be set directly.
+- **Creating an option.** On `/admin` with the deployer wallet, pick a GPU, type, strike, expiry, size, premium (defaults to model price + 8%), cap, and capacity. Click **APPROVE COLLATERAL** (if needed), then **CREATE SERIES**. The series appears in `/markets` automatically.
+- **Finding an option.** `/markets` shows an options chain per GPU and expiry: calls on the left, puts on the right, in-the-money cells tinted teal, and a blue line at the live oracle price. Click any ask price to open the order ticket. *All series* switches to a filterable list.
+- **Buying an option.** On `/trade` (or a market page), pick the series and quantity. The order ticket shows total cost with its formula, maximum loss, break-even, capped potential profit and the collateral backing the trade before any button. Acknowledge the risk disclosure, then **APPROVE** (step 1 of 2, if needed) → **BUY**. The status runs Signature → Submitted → Confirming → **SETTLED ✓**, with a live timer, the tx hash and an explorer link.
+- **Exercising an option.** `/portfolio` shows each open position as a card: P&L, exercise value now, break-even, and where the oracle sits against strike and break-even. In-the-money positions show **EXERCISE · $amount**; the contract reads the oracle and pays USDC to your wallet. After expiry, in-the-money positions show **CLAIM** instead.
+- **Transferring a hedge.** On a position card, click **Transfer NFT**, enter an address and click **TRANSFER**. This moves the position NFT, and with it the right to exercise or claim.
+- **Sizing a hedge.** `/hedge` takes your GPU-hours, *when* you need them, your price target and a stress price. It ranks every live option and futures hedge (ones that expire before you need the compute go last), explains the recommendation in plain English, and links straight to the trade.
 - **Futures.** `/futures`: pick a market, choose LONG (lock cost) or SHORT (lock revenue), approve margin, and open. After expiry, anyone can **SETTLE**.
 - **LP vault.** `/vault`: deposit test USDC for `ghLP` shares and withdraw up to the vault's idle liquidity. The vault manager writes series from `/admin` with *Write from LP vault*.
 - **Traction.** `/activity` shows onchain stats and every trade, linked to its transaction.
@@ -257,21 +286,22 @@ CHAIN_ID=10143 RPC_URL=https://testnet-rpc.monad.xyz ORACLE_KEY=0x… node scrip
 4. **Select CALL · strike $2.20 · 30 days** on `/trade`.
 5. **Show the payoff chart.** "If H100 rises above $2.20, this option protects our buyer from the increase." Drag the scenario slider.
 6. **Buy 10 contracts** ($35 premium), approving USDC first. Show the real Monad transaction and the settlement time.
-7. **Go to Portfolio** and show the open position (OTM, P&L −$35).
-8. **Open Admin** and click **H100 → $4.00 (spike)**, a real oracle transaction.
+7. **Go to Portfolio** and show the open position: *Open · OTM*, P&L ≈ −$3 (model estimate; it decays toward −$35 if H100 stays below $2.20).
+8. **Open Admin** and click **Price spike · H100 → $4.00** in Demo controls, a real oracle transaction.
 9. **Return to Portfolio.** The option is now in the money: exercise value $1,800, P&L ≈ +$1,765.
 10. Click **EXERCISE**.
 11. Show the onchain settlement: the tx hash and USDC balance increase.
 12. **SETTLED ✓**, and the position moves to *Exercised*.
 13. (Optional) Show `/admin` → protocol activity and onchain stats (trades, premium volume, payouts) as traction.
 
-Reset between runs with **H100 → $2.00** on `/admin`.
+Reset between runs with **Baseline · H100 → $2.00** on `/admin`.
 
 ## Testing
 
 ```bash
 cd contracts && forge test -vv      # 42 tests incl. fuzzing
 npm run demo-flow                   # scripted onchain E2E of the core demo (local by default)
+npm --prefix frontend test          # 30 frontend unit tests (pricing vectors, hedge maths, formatters, errors)
 npm --prefix frontend run build     # typecheck + production build
 ```
 
@@ -285,7 +315,7 @@ To run `demo-flow` against testnet: `CHAIN_ID=10143 RPC_URL=https://testnet-rpc.
 
 | Phase | Milestone |
 |---|---|
-| 1 | **Testnet MVP**: collateralized GPU calls and puts, oracle, settlement with expiry claims *(live)* |
+| 1 | **Testnet MVP**: collateralized GPU calls and puts, oracle, settlement with expiry claims *(built)* |
 | 2 | Real compute price oracle: keeper fed by live rental marketplace prices *(prototype)*; next, decentralized reporters |
 | 3 | Liquidity providers: ERC-4626 LP vault *(prototype)*; next, permissionless writers |
 | 4 | Secondary option trading: positions are transferable ERC-721s *(partial)*; next, an order book |
@@ -300,6 +330,7 @@ To run `demo-flow` against testnet: `CHAIN_ID=10143 RPC_URL=https://testnet-rpc.
 - Market statistics, price history charts, and bids are **simulated** and labelled as such.
 - Payouts are capped at the series cap so every series stays fully collateralized. The cap defaults to the strike, i.e. a call pays out up to a 2× price move.
 - One writer per series and a fixed premium set at creation. Positions are transferable NFTs, but there is no order book yet.
+- **Stale premiums.** Because premiums are fixed, after a large oracle move an option can pay more if exercised immediately than it costs, at the writer's expense. The UI warns (*Stale premium*), but the contracts don't reprice. Keep oracle prices manual while others are trading.
 - The LP vault is manager-operated, and its NAV marks liabilities at intrinsic value, not model value. Futures have a single market maker per market.
 - Portfolio values for open positions are Black-Scholes **estimates**, not market marks.
 - Test USDC has no value. The code is unaudited hackathon software, so don't use it with real funds.

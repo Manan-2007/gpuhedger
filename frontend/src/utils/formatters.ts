@@ -1,4 +1,5 @@
 import { formatUnits, hexToString, parseUnits, stringToHex, type Hex } from "viem";
+import { chainNow } from "../lib/clock";
 
 export const USDC_DECIMALS = 6;
 
@@ -47,11 +48,13 @@ export function formatUsd(value: number, decimals = 2): string {
   return usdFmt(decimals).format(value);
 }
 
-/** Price per GPU-hour: $2.14, or $0.035 for sub-dollar premiums. */
+/** Price per GPU-hour: $2.14, $0.035 for sub-dollar premiums, and $2.235 when cents would round
+ *  (a break-even of $2.235 must not display as $2.24). */
 export function formatPrice(value: number): string {
   if (!Number.isFinite(value)) return "—";
   if (value !== 0 && Math.abs(value) < 0.1) return usdFmt(3).format(value);
-  return usdFmt(2).format(value);
+  const offCents = Math.abs(value * 100 - Math.round(value * 100)) > 1e-6;
+  return usdFmt(offCents ? 3 : 2).format(value);
 }
 
 /** +$240.00 / −$12.50 */
@@ -64,7 +67,7 @@ export function formatSignedUsd(value: number, decimals = 2): string {
 
 export function formatPct(value: number, decimals = 1, signed = true): string {
   if (!Number.isFinite(value)) return "—";
-  const s = Math.abs(value).toFixed(decimals) + "%";
+  const s = Math.abs(value).toLocaleString("en-US", { minimumFractionDigits: decimals, maximumFractionDigits: decimals }) + "%";
   if (!signed) return s;
   return value > 0 ? `+${s}` : value < 0 ? `−${s}` : s;
 }
@@ -102,7 +105,7 @@ export function formatDuration(seconds: number): string {
 }
 
 /** Tenor label from now, e.g. "30D". */
-export function formatTenor(expiration: number, nowMs = Date.now()): string {
+export function formatTenor(expiration: number, nowMs = chainNow()): string {
   const secs = expiration - nowMs / 1000;
   if (secs <= 0) return "EXP";
   const days = secs / 86400;
@@ -124,7 +127,7 @@ export function formatDateTime(unixSeconds: number): string {
   });
 }
 
-export function timeAgo(unixSeconds: number, nowMs = Date.now()): string {
+export function timeAgo(unixSeconds: number, nowMs = chainNow()): string {
   const s = Math.max(Math.floor(nowMs / 1000 - unixSeconds), 0);
   if (s < 60) return `${s}s ago`;
   if (s < 3600) return `${Math.floor(s / 60)}m ago`;

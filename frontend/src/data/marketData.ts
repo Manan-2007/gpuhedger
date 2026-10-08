@@ -34,10 +34,6 @@ export const GPU_META: Record<GpuSymbol, GpuMeta> = {
   },
 };
 
-/** Fallback reference prices if the oracle is unreachable (displayed as simulated). */
-export const FALLBACK_PRICES: Record<GpuSymbol, number> = { H100: 2.14, A100: 1.31, B200: 3.82 };
-export const FALLBACK_VOLATILITY: Record<GpuSymbol, number> = { H100: 0.42, A100: 0.35, B200: 0.55 };
-
 export interface MarketDataProvider {
   readonly isSimulated: boolean;
   getStats(gpu: GpuSymbol): SimulatedMarketStats;

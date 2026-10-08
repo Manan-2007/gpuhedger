@@ -4,7 +4,6 @@ import { computeOracleAbi } from "../contracts/abis";
 import { contracts, isConfigured } from "../contracts/addresses";
 import { bytes32ToString, fromUsdc, stringToBytes32 } from "../utils/formatters";
 import { GPU_SYMBOLS, isGpuSymbol, type GpuSymbol, type OraclePrice } from "../types/markets";
-import { FALLBACK_PRICES, FALLBACK_VOLATILITY } from "../data/marketData";
 
 export const ORACLE_REFRESH_MS = 2_000;
 
@@ -45,35 +44,45 @@ export function useOracle() {
   };
 }
 
-/** Oracle price for one GPU, falling back to clearly-labelled simulated values. */
+/**
+ * Oracle price for one GPU. `price` is undefined until the oracle answers: never substitute a
+ * made-up number, because screens label this value "Oracle". Check `unavailable` to show an
+ * "Oracle unavailable" state and disable trading.
+ */
 export function useGpuPrice(gpu: GpuSymbol) {
-  const { prices, isLoading, isError } = useOracle();
+  const { prices, isLoading } = useOracle();
   const live = prices?.[gpu];
   return {
-    price: live?.price ?? FALLBACK_PRICES[gpu],
-    volatility: live?.volatility ?? FALLBACK_VOLATILITY[gpu],
+    price: live?.price,
+    volatility: live?.volatility,
     updatedAt: live?.updatedAt,
     isLive: Boolean(live),
     isLoading,
-    isError,
+    unavailable: !live && !isLoading,
   };
 }
 
 export function useAllGpuPrices() {
-  const { prices, isLoading, isError } = useOracle();
+  const { prices, isLoading } = useOracle();
   return useMemo(
     () =>
       GPU_SYMBOLS.map((gpu) => ({
         gpu,
-        price: prices?.[gpu]?.price ?? FALLBACK_PRICES[gpu],
-        volatility: prices?.[gpu]?.volatility ?? FALLBACK_VOLATILITY[gpu],
+        price: prices?.[gpu]?.price,
+        volatility: prices?.[gpu]?.volatility,
         updatedAt: prices?.[gpu]?.updatedAt,
         isLive: Boolean(prices?.[gpu]),
         isLoading,
-        isError,
+        unavailable: !prices?.[gpu] && !isLoading,
       })),
-    [prices, isLoading, isError],
+    [prices, isLoading],
   );
+}
+
+/** Live oracle prices keyed by GPU, omitting any GPU the oracle didn't return. */
+export function useLivePriceMap(): Partial<Record<GpuSymbol, number>> {
+  const prices = useAllGpuPrices();
+  return useMemo(() => Object.fromEntries(prices.filter((p) => p.price !== undefined).map((p) => [p.gpu, p.price])), [prices]);
 }
 
 /** Real onchain oracle update history (most recent 100 updates). */

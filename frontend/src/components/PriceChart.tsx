@@ -5,6 +5,7 @@ import { marketData } from "../data/marketData";
 import { useOracleHistory } from "../hooks/useOracle";
 import { formatDateTime, formatPrice } from "../utils/formatters";
 import { OnchainTag, SimulatedTag } from "./ui";
+import { chainNow } from "../lib/clock";
 
 const RANGES: TimeRange[] = ["1H", "1D", "1W", "1M", "3M"];
 type Mode = "simulated" | "oracle";
@@ -12,14 +13,15 @@ type Mode = "simulated" | "oracle";
 /** GPU price history. Market history is simulated; the "Oracle" tab shows real onchain updates. */
 export function PriceChart({ gpu, price, volatility, height = 260 }: { gpu: GpuSymbol; price: number; volatility: number; height?: number }) {
   const [range, setRange] = useState<TimeRange>("1M");
-  const [mode, setMode] = useState<Mode>("simulated");
+  // Real onchain oracle updates first; the simulated market history is opt-in and labelled.
+  const [mode, setMode] = useState<Mode>("oracle");
   const oracle = useOracleHistory(gpu);
 
   const data = useMemo(() => {
     if (mode === "oracle") {
       const pts = [...oracle.points];
       // Extend the last update to "now" so a step chart reads correctly.
-      if (pts.length) pts.push({ t: Date.now(), price: pts[pts.length - 1].price });
+      if (pts.length) pts.push({ t: chainNow(), price: pts[pts.length - 1].price });
       return pts;
     }
     return marketData.getHistory(gpu, range, price, volatility);
@@ -34,13 +36,13 @@ export function PriceChart({ gpu, price, volatility, height = 260 }: { gpu: GpuS
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-2">
           <div className="flex rounded-lg border border-line bg-bg p-0.5">
-            {(["simulated", "oracle"] as Mode[]).map((m) => (
+            {(["oracle", "simulated"] as Mode[]).map((m) => (
               <button
                 key={m}
                 onClick={() => setMode(m)}
                 className={`seg ${mode === m ? "bg-panel-2 text-fg" : "text-muted hover:text-fg"}`}
               >
-                {m === "simulated" ? "Market" : "Oracle updates"}
+                {m === "simulated" ? "Market (simulated)" : "Oracle updates"}
               </button>
             ))}
           </div>
@@ -75,7 +77,7 @@ export function PriceChart({ gpu, price, volatility, height = 260 }: { gpu: GpuS
                   <stop offset="100%" stopColor="var(--color-secondary)" stopOpacity={0} />
                 </linearGradient>
               </defs>
-              <CartesianGrid stroke="var(--color-line)" vertical={false} />
+              <CartesianGrid stroke="var(--color-chart-grid)" vertical={false} />
               <XAxis
                 dataKey="t"
                 type="number"
@@ -98,7 +100,7 @@ export function PriceChart({ gpu, price, volatility, height = 260 }: { gpu: GpuS
                 cursor={{ stroke: "var(--color-line-2)" }}
                 content={({ active, payload }) =>
                   active && payload?.length ? (
-                    <div className="rounded-lg border border-line-2 bg-panel px-3 py-2 text-xs shadow-xl">
+                    <div className="popover px-3 py-2 text-xs">
                       <div className="text-muted">{formatDateTime((payload[0].payload as { t: number }).t / 1000)}</div>
                       <div className="num mt-0.5 font-semibold text-fg">{formatPrice(Number(payload[0].value))} / GPU-h</div>
                     </div>

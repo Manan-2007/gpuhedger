@@ -11,6 +11,7 @@
  */
 
 import type { OptionKind } from "../types/options";
+import { chainNow } from "../lib/clock";
 
 export const DEFAULT_RISK_FREE_RATE = 0.04;
 export const SECONDS_PER_YEAR = 365 * 24 * 60 * 60;
@@ -112,6 +113,15 @@ export function calculatePayoff(kind: OptionKind, spot: number, strike: number, 
     : calculatePutPayoff(spot, strike, premium, payoutCap);
 }
 
+/**
+ * Premiums are fixed when a series is written and don't follow the oracle. If the price has since
+ * moved through the strike, the option can pay more right now than it costs: a buyer could buy and
+ * exercise immediately at the writer's expense. The UI warns whenever that is true.
+ */
+export function isStalePremium(kind: OptionKind, spot: number, strike: number, premium: number, payoutCap = Infinity): boolean {
+  return calculateIntrinsicValue(kind, spot, strike, payoutCap) > premium;
+}
+
 /** Underlying price at which the position breaks even at expiry. */
 export function calculateBreakEven(kind: OptionKind, strike: number, premium: number): number {
   return kind === "CALL" ? strike + premium : Math.max(strike - premium, 0);
@@ -150,7 +160,7 @@ export function summarizeTrade(params: {
   };
 }
 
-export function yearsUntil(expirationSeconds: number, nowMs = Date.now()): number {
+export function yearsUntil(expirationSeconds: number, nowMs = chainNow()): number {
   return Math.max(expirationSeconds - nowMs / 1000, 0) / SECONDS_PER_YEAR;
 }
 

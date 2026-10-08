@@ -15,7 +15,7 @@ export function MarketTable({ series, prices }: { series: OptionSeries[]; prices
   return (
     <>
       {/* Desktop table */}
-      <div className="panel hidden overflow-x-auto md:block">
+      <div className="panel-solid hidden overflow-x-auto md:block">
         <table className="w-full min-w-[880px] text-sm">
           <thead>
             <tr className="border-b border-line text-left">
@@ -65,7 +65,7 @@ export function MarketTable({ series, prices }: { series: OptionSeries[]; prices
                       <Link
                         to={`/trade?series=${s.id}`}
                         onClick={(e) => e.stopPropagation()}
-                        className={`${s.kind === "CALL" ? "btn-pos" : "btn-neg"} whitespace-nowrap px-3 py-1.5 text-xs`}
+                        className={"btn-primary whitespace-nowrap px-3 py-1.5 text-xs"}
                       >
                         BUY {s.kind}
                       </Link>

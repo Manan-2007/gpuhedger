@@ -7,7 +7,7 @@ import { addresses } from "../contracts/addresses";
 import { activeChain, explorerUrl } from "../lib/chain";
 import type { OptionKind } from "../types/options";
 import { formatPrice } from "../utils/formatters";
-import { ROADMAP } from "./LandingPage";
+import { ROADMAP } from "../data/roadmap";
 
 const TOC = [
   ["overview", "Overview"],
@@ -271,7 +271,7 @@ function Playground() {
     <div className="panel p-4 sm:p-5">
       <div className="mb-4 flex gap-1 rounded-lg border border-line bg-bg p-0.5 sm:w-fit">
         {(["CALL", "PUT"] as OptionKind[]).map((k) => (
-          <button key={k} onClick={() => setKind(k)} className={`seg flex-1 ${kind === k ? (k === "CALL" ? "bg-pos/15 text-pos" : "bg-neg/15 text-neg") : "text-muted"}`}>
+          <button key={k} onClick={() => setKind(k)} className={`seg flex-1 ${kind === k ? (k === "CALL" ? "bg-call/15 text-call" : "bg-put/15 text-put") : "text-muted"}`}>
             {k}
           </button>
         ))}

@@ -3,16 +3,34 @@ import { isAddress, type Address } from "viem";
 import { Link } from "react-router-dom";
 import type { PositionView } from "../types/options";
 import type { useOptionActions } from "../hooks/useOption";
-import { formatDate, formatDuration, formatNumber, formatPct, formatPrice, formatSignedUsd, formatTenor, formatUsd, pnlClass } from "../utils/formatters";
+import { formatDate, formatDuration, formatNumber, formatPct, formatPrice, formatTenor, formatUsd } from "../utils/formatters";
 import { useWrongNetwork } from "./WalletButton";
-import { OptionTypeBadge, Spinner } from "./ui";
+import { OptionTypeBadge, PnlValue, Spinner } from "./ui";
 
-const STATUS_STYLE = {
-  OPEN: "border-secondary/30 text-secondary",
-  EXERCISED: "border-pos/30 text-pos",
-  EXPIRED: "border-line-2 text-dim",
-  CLAIMABLE: "border-primary/40 text-primary",
-} as const;
+const DAY = 86_400;
+
+/** Position state chip: ITM teal, OTM neutral (not red), <24h to expiry amber, exercised lime, expired dim. */
+function statusChip(p: PositionView): { label: string; cls: string } {
+  switch (p.status) {
+    case "OPEN":
+      if (p.timeRemaining < DAY) return { label: `Expires in ${formatDuration(p.timeRemaining)}`, cls: "border-warn/40 bg-warn/10 text-warn" };
+      return p.intrinsicPerUnit > 0
+        ? { label: "Open · ITM", cls: "border-pos/40 bg-pos/10 text-pos" }
+        : { label: "Open · OTM", cls: "border-line-2 text-muted" };
+    case "CLAIMABLE":
+      return { label: "Claimable", cls: "border-pos/40 bg-pos/10 text-pos" };
+    case "EXERCISED":
+      // Claims after expiry are recorded with the same status; the close time tells them apart.
+      return { label: p.closedAt >= p.series.expiration ? "Claimed" : "Exercised", cls: "border-primary/40 bg-primary/10 text-primary" };
+    case "EXPIRED":
+      return { label: "Expired", cls: "border-line-2 text-dim" };
+  }
+}
+
+export function StatusChip({ p }: { p: PositionView }) {
+  const { label, cls } = statusChip(p);
+  return <span className={`chip whitespace-nowrap ${cls}`}>{label}</span>;
+}
 
 export type OptionActions = ReturnType<typeof useOptionActions>;
 
@@ -75,7 +93,7 @@ export function PositionTable({
   return (
     <>
       {/* Desktop */}
-      <div className="panel hidden overflow-x-auto lg:block">
+      <div className="panel-solid hidden overflow-x-auto lg:block">
         <table className="w-full min-w-[1000px] text-sm">
           <thead>
             <tr className="border-b border-line text-left">
@@ -106,8 +124,8 @@ export function PositionTable({
                     <td className="num px-4 py-3.5 text-right">{formatNumber(p.contracts)}</td>
                     <td className="num px-4 py-3.5 text-right">{formatUsd(p.premiumPaid)}</td>
                     <td className="num px-4 py-3.5 text-right">{formatUsd(value)}</td>
-                    <td className={`num px-4 py-3.5 text-right font-semibold ${pnlClass(p.pnl)}`}>{formatSignedUsd(p.pnl)}</td>
-                    <td className="px-4 py-3.5"><span className={`chip ${STATUS_STYLE[p.status]}`}>{p.status}</span></td>
+                    <td className="px-4 py-3.5 text-right"><PnlValue value={p.pnl} /></td>
+                    <td className="px-4 py-3.5"><StatusChip p={p} /></td>
                     <td className="px-4 py-3.5 text-right">{exerciseButton(p)}</td>
                   </tr>
                   {isOpen && (
@@ -137,7 +155,7 @@ export function PositionTable({
                   <OptionTypeBadge kind={p.series.kind} />
                   <span className="num text-sm text-muted">{formatPrice(p.series.strike)}</span>
                 </div>
-                <span className={`chip ${STATUS_STYLE[p.status]}`}>{p.status}</span>
+                <StatusChip p={p} />
               </div>
               <div className="mt-3 grid grid-cols-3 gap-2 text-sm">
                 <Cell k="Contracts" v={formatNumber(p.contracts)} />
@@ -147,7 +165,7 @@ export function PositionTable({
               <div className="mt-3 flex items-center justify-between">
                 <div>
                   <div className="label">P&L</div>
-                  <div className={`num text-lg font-semibold ${pnlClass(p.pnl)}`}>{formatSignedUsd(p.pnl)}</div>
+                  <div className="text-lg"><PnlValue value={p.pnl} /></div>
                 </div>
                 {exerciseButton(p, "px-4 py-2.5")}
               </div>

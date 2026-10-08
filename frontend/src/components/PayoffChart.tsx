@@ -112,7 +112,10 @@ export function PayoffChart(props: PayoffChartProps) {
           <span className="w-5 border-t-2 border-dashed border-secondary" /> Est. value today (model)
         </span>
         <span className="flex items-center gap-2">
-          <span className="h-3 w-0.5 bg-fg/60" /> Oracle price
+          <span className="h-3 w-0.5 bg-secondary" /> Oracle price
+        </span>
+        <span className="flex items-center gap-2">
+          <span className="h-3 w-0 border-l border-dashed border-chart-ref" /> Strike / break-even
         </span>
       </div>
 
@@ -121,13 +124,13 @@ export function PayoffChart(props: PayoffChartProps) {
           <ComposedChart data={data} margin={{ top: 18, right: 12, bottom: 4, left: 4 }}>
             <defs>
               <linearGradient id={gradId} x1="0" y1="0" x2="0" y2="1">
-                <stop offset={0} stopColor="var(--color-pos)" stopOpacity={0.28} />
-                <stop offset={zeroOffset} stopColor="var(--color-pos)" stopOpacity={0.04} />
-                <stop offset={zeroOffset} stopColor="var(--color-neg)" stopOpacity={0.04} />
-                <stop offset={1} stopColor="var(--color-neg)" stopOpacity={0.28} />
+                <stop offset={0} stopColor="var(--color-pos)" stopOpacity={0.15} />
+                <stop offset={zeroOffset} stopColor="var(--color-pos)" stopOpacity={0.15} />
+                <stop offset={zeroOffset} stopColor="var(--color-neg)" stopOpacity={0.15} />
+                <stop offset={1} stopColor="var(--color-neg)" stopOpacity={0.15} />
               </linearGradient>
             </defs>
-            <CartesianGrid stroke="var(--color-line)" strokeDasharray="0" vertical={false} />
+            <CartesianGrid stroke="var(--color-chart-grid)" strokeDasharray="0" vertical={false} />
             <XAxis
               dataKey="spot"
               type="number"
@@ -144,29 +147,29 @@ export function PayoffChart(props: PayoffChartProps) {
               width={56}
             />
             <Tooltip content={<PayoffTooltip />} cursor={{ stroke: "var(--color-line-2)", strokeWidth: 1 }} />
-            <ReferenceLine y={0} stroke="var(--color-dim)" />
+            <ReferenceLine y={0} stroke="var(--color-line-3)" />
             <ReferenceLine
               x={strike}
-              stroke="var(--color-muted)"
+              stroke="var(--color-chart-ref)"
               strokeDasharray="4 4"
-              label={{ value: `Strike ${formatPrice(strike)}`, position: "insideTopLeft", fill: "var(--color-muted)", fontSize: 11 }}
+              label={{ value: `Strike ${formatPrice(strike)}`, position: "insideTopLeft", fill: "var(--color-chart-ref)", fontSize: 11 }}
             />
             {summary.breakEven > range.lo && summary.breakEven < range.hi && (
               <ReferenceLine
                 x={summary.breakEven}
-                stroke="var(--color-dim)"
+                stroke="var(--color-chart-ref)"
                 strokeDasharray="2 4"
-                label={{ value: "B/E", position: "insideBottomLeft", fill: "var(--color-dim)", fontSize: 10 }}
+                label={{ value: "B/E", position: "insideBottomLeft", fill: "var(--color-chart-ref)", fontSize: 10 }}
               />
             )}
             <ReferenceLine
               x={spot}
-              stroke="var(--color-fg)"
-              strokeOpacity={0.6}
-              label={{ value: `Oracle ${formatPrice(spot)}`, position: "top", fill: "var(--color-fg)", fontSize: 11 }}
+              stroke="var(--color-secondary)"
+              strokeWidth={1.5}
+              label={{ value: `Oracle ${formatPrice(spot)}`, position: "top", fill: "var(--color-secondary)", fontSize: 11 }}
             />
             {Math.abs(scenario - spot) > 1e-6 && (
-              <ReferenceLine x={scenario} stroke="var(--color-secondary)" strokeOpacity={0.7} strokeDasharray="1 3" />
+              <ReferenceLine x={scenario} stroke="var(--color-fg)" strokeOpacity={0.7} strokeDasharray="1 3" />
             )}
             <Area type="linear" dataKey="expiry" stroke="none" fill={`url(#${gradId})`} isAnimationActive={false} />
             <Line type="linear" dataKey="expiry" stroke="var(--color-primary)" strokeWidth={2} dot={false} isAnimationActive={false} name="At expiry" />
@@ -184,7 +187,7 @@ export function PayoffChart(props: PayoffChartProps) {
         </ResponsiveContainer>
       </div>
 
-      <div className="mt-3 rounded-lg border border-line bg-bg/60 p-3">
+      <div className="mt-3 rounded-lg border border-line bg-bg-deep/60 p-3">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <label htmlFor="scenario" className="label">
             Scenario: {gpuLabel} price at expiry
@@ -240,7 +243,7 @@ function PayoffTooltip({ active, payload }: { active?: boolean; payload?: Toolti
   if (!active || !payload?.length) return null;
   const p = payload[0].payload;
   return (
-    <div className="rounded-lg border border-line-2 bg-panel px-3 py-2 text-xs shadow-xl">
+    <div className="popover px-3 py-2 text-xs">
       <div className="num mb-1 text-muted">Underlying {formatPrice(p.spot)}/h</div>
       <div className="flex justify-between gap-6">
         <span className="flex items-center gap-1.5 text-muted">

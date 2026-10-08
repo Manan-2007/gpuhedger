@@ -91,10 +91,15 @@ export function friendlyError(error: unknown): string {
   }
 
   if (error instanceof Error) {
-    if (/user (rejected|denied)/i.test(error.message)) {
+    // wagmi errors aren't viem BaseErrors; their `message` ends in "Version: @wagmi/core@…", so prefer shortMessage.
+    const short = (error as { shortMessage?: string }).shortMessage || error.message;
+    if (error.name === "ProviderNotFoundError" || /provider not found/i.test(short)) {
+      return "No browser wallet detected. Install MetaMask, or open this page in your wallet's in-app browser.";
+    }
+    if (/user (rejected|denied)/i.test(short)) {
       return "You rejected the request in your wallet. Nothing was submitted.";
     }
-    return error.message;
+    return short;
   }
   return String(error);
 }

@@ -6,6 +6,7 @@ import { bytes32ToString, fromUsdc, stringToBytes32, toUsdc } from "../utils/for
 import { isGpuSymbol, type GpuSymbol } from "../types/markets";
 import { useOracle } from "./useOracle";
 import { useTransaction } from "./useTransaction";
+import { chainNow } from "../lib/clock";
 
 export type FuturesSide = "LONG" | "SHORT";
 
@@ -102,7 +103,7 @@ export function useFuturesPositions() {
     query: { enabled: hasFutures && Boolean(address), refetchInterval: 3_000 },
   });
   const positions = useMemo<FuturesPositionView[]>(() => {
-    const now = Date.now() / 1000;
+    const now = chainNow() / 1000;
     const out: FuturesPositionView[] = [];
     for (const p of query.data ?? []) {
       const market = markets.find((m) => m.id === Number(p.marketId));
@@ -168,7 +169,7 @@ export function useFuturesActions() {
         stringToBytes32(p.region),
         toUsdc(p.forward),
         toUsdc(p.band),
-        BigInt(Math.floor(Date.now() / 1000 + p.days * 86400)),
+        BigInt(Math.floor(chainNow() / 1000 + p.days * 86400)),
         BigInt(p.contractSize),
         BigInt(p.capacity),
       ],
