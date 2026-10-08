@@ -9,13 +9,14 @@ import { formatNumber, formatPrice, formatTenor, formatUsd, toUsdc } from "../ut
 import { TransactionStatus } from "../components/TransactionStatus";
 import { ConnectButton, SwitchNetworkButton, useWrongNetwork } from "../components/WalletButton";
 import { EmptyState, ExplorerLink, OnchainTag, OptionTypeBadge, SectionHeader, Spinner, StatCard } from "../components/ui";
+import { chainNow } from "../lib/clock";
 
 export function VaultPage() {
   const vault = useVault();
   const { series } = useMarkets();
   const actions = useVaultActions();
   const vaultSeries = series.filter((s) => vault.allSeries.some((a) => a.toLowerCase() === s.address.toLowerCase()));
-  const now = Date.now() / 1000;
+  const now = chainNow() / 1000;
 
   if (!hasVault) {
     return (
@@ -37,7 +38,7 @@ export function VaultPage() {
 
       <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-6">
         <StatCard label="Vault value (NAV)" value={formatUsd(vault.tvl, 0)} />
-        <StatCard label="Share price" value={`$${vault.sharePrice.toFixed(4)}`} sub="per ghLP" valueClass={vault.sharePrice >= 1 ? "text-pos" : "text-neg"} />
+        <StatCard label="Share price" value={`$${vault.sharePrice.toFixed(4)}`} sub="per ghLP" valueClass={vault.sharePrice > 1.00005 ? "text-pos" : vault.sharePrice < 0.99995 ? "text-neg" : ""} />
         <StatCard label="Idle liquidity" value={formatUsd(vault.idle, 0)} sub="withdrawable" />
         <StatCard label="Deployed as collateral" value={formatUsd(vault.deployed, 0)} sub="net of liabilities" />
         <StatCard label="Premiums earned" value={formatUsd(vault.premiumsEarned)} valueClass={vault.premiumsEarned > 0 ? "text-pos" : ""} />
@@ -70,7 +71,7 @@ export function VaultPage() {
                         <td className="num px-3 py-2.5">{formatPrice(s.strike)}</td>
                         <td className="num px-3 py-2.5">{formatTenor(s.expiration)}</td>
                         <td className="num px-3 py-2.5">{formatNumber(s.soldContracts)} / {formatNumber(s.maxContracts)}</td>
-                        <td className="num px-3 py-2.5 text-pos">{formatUsd(s.premium * s.contractSize * s.soldContracts)}</td>
+                        <td className={`num px-3 py-2.5 ${s.soldContracts > 0 ? "text-pos" : "text-muted"}`}>{formatUsd(s.premium * s.contractSize * s.soldContracts)}</td>
                         <td className="num px-3 py-2.5">{formatUsd(s.collateralBalance, 0)}</td>
                         <td className="px-3 py-2.5 text-right">
                           {canHarvest ? (
@@ -86,7 +87,16 @@ export function VaultPage() {
               </table>
             </div>
           )}
-          {actions.state.phase !== "idle" && <div className="mt-3"><TransactionStatus state={actions.state} onDismiss={actions.reset} compact /></div>}
+          {actions.state.phase !== "idle" && (
+            <div className="mt-3">
+              <TransactionStatus
+                state={actions.state}
+                onDismiss={actions.reset}
+                compact
+                successNote={<span className="text-muted">Series settled. Its unused collateral is back in the vault's idle liquidity.</span>}
+              />
+            </div>
+          )}
           <p className="mt-3 text-xs text-dim">
             NAV = idle USDC + collateral in live series − what holders could exercise for at the current oracle price. Harvest settles expired
             series and returns collateral to the vault; anyone can call it.
@@ -129,7 +139,7 @@ function DepositPanel() {
   else action = <button className="btn-primary w-full py-3" disabled={busy} onClick={() => { setLast("vault"); vaultTx.withdraw(raw, address); }}>{busy && <Spinner />} WITHDRAW</button>;
 
   return (
-    <div className="panel self-start p-4 sm:p-5">
+    <div className="panel-solid self-start p-4 sm:p-5">
       <div className="grid grid-cols-2 gap-1 rounded-lg border border-line bg-bg p-0.5">
         {(["deposit", "withdraw"] as const).map((m) => (
           <button key={m} onClick={() => setMode(m)} className={`seg py-2 uppercase ${mode === m ? "bg-panel-2 text-fg" : "text-muted"}`}>{m}</button>
@@ -150,12 +160,29 @@ function DepositPanel() {
         <div className="flex justify-between"><span className="text-muted">Your position value</span><span className="num">{formatUsd(vault.userValue)}</span></div>
         <div className="flex justify-between"><span className="text-muted">You receive</span><span className="num">{mode === "deposit" ? `${formatNumber(n / vault.sharePrice || 0, 2)} ghLP` : formatUsd(n || 0)}</span></div>
       </div>
-      <p className="mt-3 text-xs text-warn">
+      <p className="mt-3 rounded-lg border border-warn/30 bg-warn/[0.06] px-3.5 py-3 text-xs text-fg">
         LPs are option writers: if GPU prices move sharply, holders' payouts come out of vault collateral. Withdrawals are limited to idle
         liquidity. Testnet only.
       </p>
       <div className="mt-4">{action}</div>
-      {state.phase !== "idle" && <div className="mt-3"><TransactionStatus state={state} onDismiss={() => (last === "vault" ? vaultTx.reset() : usdcTx.reset())} compact /></div>}
+      {state.phase !== "idle" && (
+        <div className="mt-3">
+          <TransactionStatus
+            state={state}
+            onDismiss={() => (last === "vault" ? vaultTx.reset() : usdcTx.reset())}
+            compact
+            successNote={
+              <span className="text-muted">
+                {last === "approve"
+                  ? "USDC approved. You can now deposit."
+                  : mode === "deposit"
+                    ? "Deposited. Your ghLP shares are in your wallet."
+                    : "Withdrawn. The USDC is back in your wallet."}
+              </span>
+            }
+          />
+        </div>
+      )}
       <div className="mt-3 text-xs text-dim">Vault <ExplorerLink address={contracts.vault} /></div>
     </div>
   );

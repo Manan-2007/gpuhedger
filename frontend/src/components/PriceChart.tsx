@@ -5,6 +5,7 @@ import { marketData } from "../data/marketData";
 import { useOracleHistory } from "../hooks/useOracle";
 import { formatDateTime, formatPrice } from "../utils/formatters";
 import { OnchainTag, SimulatedTag } from "./ui";
+import { chainNow } from "../lib/clock";
 
 const RANGES: TimeRange[] = ["1H", "1D", "1W", "1M", "3M"];
 type Mode = "simulated" | "oracle";
@@ -20,7 +21,7 @@ export function PriceChart({ gpu, price, volatility, height = 260 }: { gpu: GpuS
     if (mode === "oracle") {
       const pts = [...oracle.points];
       // Extend the last update to "now" so a step chart reads correctly.
-      if (pts.length) pts.push({ t: Date.now(), price: pts[pts.length - 1].price });
+      if (pts.length) pts.push({ t: chainNow(), price: pts[pts.length - 1].price });
       return pts;
     }
     return marketData.getHistory(gpu, range, price, volatility);

@@ -10,6 +10,7 @@ import { MarketTable } from "../components/MarketTable";
 import { ExpiryTabs, OptionsChain, expiryKey, groupExpiries } from "../components/OptionsChain";
 import { EmptyState, ErrorNote, OnchainTag, SectionHeader, SimulatedTag, Skeleton } from "../components/ui";
 import { isConfigured } from "../contracts/addresses";
+import { chainNow } from "../lib/clock";
 
 type ExpiryBucket = "ALL" | "SHORT" | "MID" | "LONG";
 const EXPIRY_LABEL: Record<ExpiryBucket, string> = { ALL: "All", SHORT: "≤ 14D", MID: "15–45D", LONG: "> 45D" };
@@ -51,7 +52,7 @@ export function MarketsPage() {
   const chainGroup = groups.find((g) => g.key === exp);
 
   const filtered = useMemo(() => {
-    const now = Date.now() / 1000;
+    const now = chainNow() / 1000;
     return series
       .filter((s) => gpu === "ALL" || s.gpu === gpu)
       .filter((s) => kind === "ALL" || s.kind === kind)

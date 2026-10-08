@@ -27,6 +27,7 @@ import {
 import { TransactionStatus } from "../components/TransactionStatus";
 import { ConnectButton, useWrongNetwork } from "../components/WalletButton";
 import { Ago, EmptyState, ExplorerLink, OnchainTag, OptionTypeBadge, SectionHeader, Spinner, StatCard } from "../components/ui";
+import { chainNow } from "../lib/clock";
 
 export function AdminPage() {
   const { isConnected } = useAccount();
@@ -356,7 +357,7 @@ function CreateSeriesPanel({ enabled, vaultEnabled }: { enabled: boolean; vaultE
           region: stringToBytes32(region),
           optionType: kind === "CALL" ? 0 : 1,
           strikePrice: toUsdc(strikeN),
-          expiration: BigInt(Math.floor(Date.now() / 1000 + daysN * 86400)),
+          expiration: BigInt(Math.floor(chainNow() / 1000 + daysN * 86400)),
           contractSize: BigInt(sizeN),
           premium: toUsdc(premiumN),
           maxPayoutPerUnit: toUsdc(capN),
@@ -508,7 +509,7 @@ function SeriesPanel() {
   const { series } = useMarkets();
   const actions = useOptionActions();
   const [active, setActive] = useState<number>();
-  const now = Date.now() / 1000;
+  const now = chainNow() / 1000;
   return (
     <div className="mt-6">
       <Panel title={`Option series (${series.length})`}>

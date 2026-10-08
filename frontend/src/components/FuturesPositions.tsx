@@ -6,6 +6,7 @@ import { formatDuration, formatNumber, formatPrice, formatSignedUsd, formatUsd, 
 import { TransactionStatus } from "./TransactionStatus";
 import { useWrongNetwork } from "./WalletButton";
 import { Spinner } from "./ui";
+import { chainNow } from "../lib/clock";
 
 /** The connected wallet's GPU futures positions. */
 export function FuturesPositions({ title = "Futures positions" }: { title?: string }) {
@@ -59,7 +60,7 @@ export function FuturesPositions({ title = "Futures positions" }: { title?: stri
                     ) : p.expired ? (
                       <span className="text-primary">Ready to settle</span>
                     ) : (
-                      <span className="text-muted">{formatDuration(p.market.expiration - Date.now() / 1000)}</span>
+                      <span className="text-muted">{formatDuration(p.market.expiration - chainNow() / 1000)}</span>
                     )}
                   </td>
                   <td className="px-4 py-3 text-right">

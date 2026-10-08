@@ -11,6 +11,7 @@
  */
 
 import type { OptionKind } from "../types/options";
+import { chainNow } from "../lib/clock";
 
 export const DEFAULT_RISK_FREE_RATE = 0.04;
 export const SECONDS_PER_YEAR = 365 * 24 * 60 * 60;
@@ -159,7 +160,7 @@ export function summarizeTrade(params: {
   };
 }
 
-export function yearsUntil(expirationSeconds: number, nowMs = Date.now()): number {
+export function yearsUntil(expirationSeconds: number, nowMs = chainNow()): number {
   return Math.max(expirationSeconds - nowMs / 1000, 0) / SECONDS_PER_YEAR;
 }
 

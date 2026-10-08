@@ -2,7 +2,40 @@
 
 Running notes from the frontend side. Newest first.
 
-## 2026-10-09
+## 2026-10-09 (day 4)
+
+### Previously untested flows, now verified in the UI
+
+On a throwaway Anvil (port 8547) with `evm_increaseTime`, driving the real UI with the test wallet:
+
+| Flow | Result |
+|---|---|
+| Admin → create series (wallet writer): H100 CALL $2.10, 1 day, 50 contracts | ✓ 0.52 s, $10,500 collateral |
+| Buy 5 of it, H100 → $3.00, +25 h, portfolio shows **CLAIMABLE $450.00** → CLAIM | ✓ $450 paid, 0.27 s |
+| Futures: open LONG 10 @ $2.05, +46 days, SETTLE | ✓ $1,950 paid (margin $1,000 + $950) |
+| Vault: withdraw $1,000; harvest expired series #9 | ✓ idle liquidity $139,500 → $211,500 |
+| Admin: pause / unpause | ✓ new global "Trading is paused" banner |
+
+Not covered: create series via the LP vault writer, admin futures-market creation, volatility update, real MetaMask.
+
+### Clock fix
+
+The UI decided "expired?" with the browser clock while contracts use `block.timestamp`. After a time jump (or on a
+laptop whose clock is off), CLAIM/SETTLE didn't appear and admin-created expiries could revert. `lib/clock.ts`
+now aligns the UI with the latest block when the two differ by > 5 s. No change on a healthy setup.
+
+### Hedge calculator changes (affects the demo script in `10-DEMO-AND-PITCH.md`)
+
+The calculator now asks *when* the compute is needed and ranks hedges that expire first last. For "I buy compute,
+H100, 5,000 GPU-hours, 1 month, stress $4.00" it recommends **50 × CALL $2.20 · 30D for $175**: cost capped at
+$2.235/GPU-h, $11,175 instead of $20,000 in the stress case. The old script expected the 14-day $2.00 call for $365.
+
+### Tests
+
+`npm --prefix frontend test` runs 30 Vitest tests: the Black-Scholes vectors from `08-DATA-AND-STATE.md`, trade
+summary, stale-premium detection, hedge ranking (incl. your $975 futures vector), formatters and wallet errors.
+
+## 2026-10-09 (day 3)
 
 ### Running the app
 

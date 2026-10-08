@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { useAccount } from "wagmi";
-import { CartesianGrid, Line, LineChart, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+import { Area, CartesianGrid, ComposedChart, Line, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { contracts, hasFutures } from "../contracts/addresses";
 import { futuresPnlPerUnit, useFuturesActions, useFuturesMarkets, type FuturesMarket, type FuturesSide } from "../hooks/useFutures";
 import { useAllGpuPrices } from "../hooks/useOracle";
@@ -12,12 +12,13 @@ import { FuturesPositions } from "../components/FuturesPositions";
 import { TransactionStatus } from "../components/TransactionStatus";
 import { ConnectButton, SwitchNetworkButton, useWrongNetwork } from "../components/WalletButton";
 import { EmptyState, KeyValue, OnchainTag, OracleUnavailable, SectionHeader, Skeleton, Spinner } from "../components/ui";
+import { chainNow } from "../lib/clock";
 
 export function FuturesPage() {
   const { markets, isLoading } = useFuturesMarkets();
   const prices = useAllGpuPrices();
   const [selectedId, setSelectedId] = useState<number>();
-  const now = Date.now() / 1000;
+  const now = chainNow() / 1000;
   const live = markets.filter((m) => m.expiration > now);
   const selected = markets.find((m) => m.id === selectedId) ?? live[0];
 
@@ -110,7 +111,7 @@ function FuturesTrade({ market: m, spot }: { market: FuturesMarket; spot: number
   const marginRaw = m.bandRaw * BigInt(m.contractSize) * BigInt(qty > 0 ? qty : 0);
   const margin = m.band * gpuHours;
   const pnlNow = futuresPnlPerUnit(side, spot, m.forwardPrice, m.band) * gpuHours;
-  const expired = m.expiration <= Date.now() / 1000;
+  const expired = m.expiration <= chainNow() / 1000;
   const busy = tx.isBusy || usdcTx.isBusy;
 
   const data = useMemo(() => {
@@ -139,8 +140,16 @@ function FuturesTrade({ market: m, spot }: { market: FuturesMarket; spot: number
     );
   else
     action = (
-      <button className={"btn-primary w-full py-3"} disabled={busy} onClick={() => { setLast("open"); tx.open(m, side, qty); }}>
-        {busy && <Spinner />} OPEN {side}
+      <button
+        className="btn-primary w-full py-3"
+        disabled={busy}
+        onClick={async () => {
+          setLast("open");
+          // Each new position needs its own risk acknowledgement.
+          if (await tx.open(m, side, qty)) setAccepted(false);
+        }}
+      >
+        {busy && <Spinner />} OPEN {side} · {formatUsd(margin)} MARGIN
       </button>
     );
 
@@ -155,7 +164,15 @@ function FuturesTrade({ market: m, spot }: { market: FuturesMarket; spot: number
         </div>
         <div className="h-64 w-full">
           <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={data} margin={{ top: 16, right: 12, bottom: 4, left: 4 }}>
+            <ComposedChart data={data} margin={{ top: 16, right: 12, bottom: 4, left: 4 }}>
+              <defs>
+                <linearGradient id="fut-pnl" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset={0} stopColor="var(--color-pos)" stopOpacity={0.15} />
+                  <stop offset={0.5} stopColor="var(--color-pos)" stopOpacity={0.15} />
+                  <stop offset={0.5} stopColor="var(--color-neg)" stopOpacity={0.15} />
+                  <stop offset={1} stopColor="var(--color-neg)" stopOpacity={0.15} />
+                </linearGradient>
+              </defs>
               <CartesianGrid stroke="var(--color-chart-grid)" vertical={false} />
               <XAxis dataKey="spot" type="number" domain={["dataMin", "dataMax"]} tickFormatter={(v: number) => `$${v.toFixed(2)}`} tick={{ fill: "var(--color-dim)", fontSize: 11 }} stroke="var(--color-line-2)" />
               <YAxis tickFormatter={(v: number) => `${v < 0 ? "−" : ""}$${Math.abs(v).toFixed(0)}`} tick={{ fill: "var(--color-dim)", fontSize: 11 }} stroke="var(--color-line-2)" width={60} />
@@ -170,11 +187,13 @@ function FuturesTrade({ market: m, spot }: { market: FuturesMarket; spot: number
                   ) : null
                 }
               />
-              <ReferenceLine y={0} stroke="var(--color-dim)" />
-              <ReferenceLine x={m.forwardPrice} stroke="var(--color-muted)" strokeDasharray="4 4" label={{ value: `Forward ${formatPrice(m.forwardPrice)}`, position: "insideTopLeft", fill: "var(--color-muted)", fontSize: 11 }} />
-              <ReferenceLine x={spot} stroke="var(--color-fg)" strokeOpacity={0.6} label={{ value: `Oracle ${formatPrice(spot)}`, position: "top", fill: "var(--color-fg)", fontSize: 11 }} />
+              <ReferenceLine y={0} stroke="var(--color-line-3)" />
+              <ReferenceLine x={m.forwardPrice} stroke="var(--color-chart-ref)" strokeDasharray="4 4" label={{ value: `Forward ${formatPrice(m.forwardPrice)}`, position: "insideTopLeft", fill: "var(--color-chart-ref)", fontSize: 11 }} />
+              <ReferenceLine x={spot} stroke="var(--color-secondary)" strokeWidth={1.5} label={{ value: `Oracle ${formatPrice(spot)}`, position: "top", fill: "var(--color-secondary)", fontSize: 11 }} />
+              {/* P&L is symmetric (±margin), so the zero line sits mid-chart and the fill splits at 50%. */}
+              <Area type="linear" dataKey="pnl" stroke="none" fill="url(#fut-pnl)" baseValue={0} isAnimationActive={false} />
               <Line type="linear" dataKey="pnl" stroke="var(--color-primary)" strokeWidth={2} dot={false} isAnimationActive={false} />
-            </LineChart>
+            </ComposedChart>
           </ResponsiveContainer>
         </div>
         <p className="mt-3 text-sm text-muted">
@@ -184,8 +203,8 @@ function FuturesTrade({ market: m, spot }: { market: FuturesMarket; spot: number
         </p>
       </div>
 
-      <div className="panel p-4 sm:p-5">
-        <div className="grid grid-cols-2 gap-1 rounded-lg border border-line bg-bg p-0.5">
+      <div className="panel-solid self-start p-4 sm:p-5" id="trade-panel">
+        <div className="grid grid-cols-2 gap-1 rounded-lg border border-line bg-bg-deep p-0.5">
           {(["LONG", "SHORT"] as FuturesSide[]).map((s) => (
             <button key={s} onClick={() => setSide(s)} className={`seg py-2 ${side === s ? (s === "LONG" ? "bg-call/15 text-call" : "bg-put/15 text-put") : "text-muted"}`}>
               {s}
@@ -199,19 +218,32 @@ function FuturesTrade({ market: m, spot }: { market: FuturesMarket; spot: number
             <span className="num shrink-0 text-xs text-muted">× {m.contractSize} GPU-h</span>
           </div>
         </label>
-        <div className="mt-4 divide-y divide-line rounded-lg border border-line bg-bg/50 px-3.5 py-1.5">
-          <KeyValue label="Forward price" value={`${formatPrice(m.forwardPrice)}/h`} />
-          <KeyValue label="Oracle price" value={`${formatPrice(spot)}/h`} />
-          <KeyValue label="P&L if settled now" value={formatSignedUsd(pnlNow)} valueClass={pnlClass(pnlNow)} />
-          <KeyValue label="Max gain / max loss" value={`±${formatUsd(margin)}`} />
-          <KeyValue label="Premium" value="None" />
-          <div className="flex items-baseline justify-between py-2.5">
-            <span className="text-sm font-semibold">Margin posted</span>
-            <span className="num text-lg font-semibold text-fg">{formatUsd(margin)}</span>
+        <div className="mt-5 flex items-end justify-between gap-3">
+          <div>
+            <div className="label">Margin posted</div>
+            <div className="num mt-1 text-xs text-muted">band {formatPrice(m.band)} × {formatNumber(gpuHours)} GPU-h · no premium</div>
           </div>
+          <div className="num text-3xl font-semibold text-fg">{formatUsd(margin)}</div>
         </div>
-        <label className="mt-3 flex items-start gap-2 text-xs text-fg/90">
-          <input type="checkbox" checked={accepted} onChange={(e) => setAccepted(e.target.checked)} className="mt-0.5 h-4 w-4 accent-[var(--color-primary)]" />
+        <div className="mt-2 divide-y divide-line rounded-lg border border-line bg-bg-deep px-3.5 py-1.5">
+          <KeyValue label={side === "LONG" ? "Locked cost" : "Locked revenue"} value={`${formatPrice(m.forwardPrice)}/GPU-h`} />
+          <KeyValue label="Oracle price now" value={`${formatPrice(spot)}/GPU-h`} />
+          <KeyValue label="P&L if settled now" value={formatSignedUsd(pnlNow)} valueClass={pnlClass(pnlNow)} />
+        </div>
+        <dl className="mt-3 grid grid-cols-2 gap-px overflow-hidden rounded-lg border border-line bg-line">
+          <div className="bg-bg-deep px-3 py-2.5">
+            <dt className="text-[11px] text-muted">Maximum loss</dt>
+            <dd className="num mt-0.5 text-base font-semibold text-neg">−{formatUsd(margin)}</dd>
+            <dd className="text-[11px] text-dim">if {m.gpu} moves {formatPrice(m.band)} against you</dd>
+          </div>
+          <div className="bg-bg-deep px-3 py-2.5">
+            <dt className="text-[11px] text-muted">Maximum gain</dt>
+            <dd className="num mt-0.5 text-base font-semibold text-pos">up to +{formatUsd(margin)}</dd>
+            <dd className="text-[11px] text-dim">capped at the band, fully funded</dd>
+          </div>
+        </dl>
+        <label className="mt-4 flex items-start gap-2 rounded-lg border border-warn/30 bg-warn/[0.06] px-3.5 py-3 text-xs text-fg">
+          <input type="checkbox" checked={accepted} onChange={(e) => setAccepted(e.target.checked)} className="mt-0.5 h-4 w-4 shrink-0 accent-[var(--color-primary)]" />
           I understand futures can lose up to the full margin if the price moves against me by the band or more.
         </label>
         <div className="mt-4">{action}</div>

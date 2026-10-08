@@ -1,6 +1,9 @@
 import { Suspense, lazy, useEffect } from "react";
 import { Route, Routes, useLocation } from "react-router-dom";
-import { useAccount, useConnect } from "wagmi";
+import { useAccount, useConnect, usePublicClient } from "wagmi";
+import { useQuery } from "@tanstack/react-query";
+import { activeChain } from "./lib/chain";
+import { syncChainClock } from "./lib/clock";
 import { Navbar } from "./components/Navbar";
 import { Footer } from "./components/Footer";
 import { useMockWallet } from "./lib/wagmi";
@@ -37,6 +40,21 @@ function ScrollToTop() {
   return null;
 }
 
+/** Keeps chainNow() aligned with block.timestamp (see lib/clock.ts). */
+function ChainClockSync() {
+  const client = usePublicClient({ chainId: activeChain.id });
+  useQuery({
+    queryKey: ["chain-clock", activeChain.id],
+    enabled: Boolean(client),
+    refetchInterval: 15_000,
+    queryFn: async () => {
+      const block = await client!.getBlock();
+      return syncChainClock(Number(block.timestamp));
+    },
+  });
+  return null;
+}
+
 /** Local E2E only: auto-connect the mock Anvil account (see lib/wagmi.ts). */
 function MockAutoConnect() {
   const { isConnected } = useAccount();
@@ -52,6 +70,7 @@ export function App() {
     <div className="flex min-h-screen flex-col">
       <ScrollToTop />
       <MockAutoConnect />
+      <ChainClockSync />
       <Navbar />
       <main className="flex-1">
         <Suspense fallback={<PageFallback />}>

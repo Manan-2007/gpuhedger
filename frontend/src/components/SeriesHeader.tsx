@@ -2,6 +2,7 @@ import type { OptionSeries } from "../types/options";
 import { GPU_META } from "../data/marketData";
 import { formatDate, formatPct, formatPrice } from "../utils/formatters";
 import { Ago, Countdown, OptionTypeBadge } from "./ui";
+import { chainNow } from "../lib/clock";
 
 /** Plain-language distance between the oracle price and the strike. */
 export function moneyness(s: Pick<OptionSeries, "kind" | "strike" | "maxPayoutPerUnit">, spot: number) {
@@ -27,7 +28,7 @@ export function SeriesHeader({
   as?: "h1" | "h2";
 }) {
   const { itm, intrinsic, movePct } = moneyness(s, spot);
-  const expired = s.expiration * 1000 <= Date.now();
+  const expired = s.expiration * 1000 <= chainNow();
   const direction = s.kind === "CALL" ? "rises above" : "falls below";
 
   return (

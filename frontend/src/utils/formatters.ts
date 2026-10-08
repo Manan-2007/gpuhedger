@@ -1,4 +1,5 @@
 import { formatUnits, hexToString, parseUnits, stringToHex, type Hex } from "viem";
+import { chainNow } from "../lib/clock";
 
 export const USDC_DECIMALS = 6;
 
@@ -104,7 +105,7 @@ export function formatDuration(seconds: number): string {
 }
 
 /** Tenor label from now, e.g. "30D". */
-export function formatTenor(expiration: number, nowMs = Date.now()): string {
+export function formatTenor(expiration: number, nowMs = chainNow()): string {
   const secs = expiration - nowMs / 1000;
   if (secs <= 0) return "EXP";
   const days = secs / 86400;
@@ -126,7 +127,7 @@ export function formatDateTime(unixSeconds: number): string {
   });
 }
 
-export function timeAgo(unixSeconds: number, nowMs = Date.now()): string {
+export function timeAgo(unixSeconds: number, nowMs = chainNow()): string {
   const s = Math.max(Math.floor(nowMs / 1000 - unixSeconds), 0);
   if (s < 60) return `${s}s ago`;
   if (s < 3600) return `${Math.floor(s / 60)}m ago`;

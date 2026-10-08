@@ -20,7 +20,8 @@ function statusChip(p: PositionView): { label: string; cls: string } {
     case "CLAIMABLE":
       return { label: "Claimable", cls: "border-pos/40 bg-pos/10 text-pos" };
     case "EXERCISED":
-      return { label: "Exercised", cls: "border-primary/40 bg-primary/10 text-primary" };
+      // Claims after expiry are recorded with the same status; the close time tells them apart.
+      return { label: p.closedAt >= p.series.expiration ? "Claimed" : "Exercised", cls: "border-primary/40 bg-primary/10 text-primary" };
     case "EXPIRED":
       return { label: "Expired", cls: "border-line-2 text-dim" };
   }

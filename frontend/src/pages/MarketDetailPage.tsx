@@ -11,6 +11,7 @@ import { indicativeBid } from "../components/MarketTable";
 import { EmptyState, ExplorerLink, KeyValue, OnchainTag, OptionTypeBadge, OracleUnavailable, Skeleton } from "../components/ui";
 import { SeriesHeader } from "../components/SeriesHeader";
 import { StickyOrderBar } from "../components/StickyOrderBar";
+import { chainNow } from "../lib/clock";
 
 export function MarketDetailPage() {
   const { id } = useParams();
@@ -74,7 +75,7 @@ function DetailBody({ series: s, contracts, setContracts, spot, volatility, upda
   const model = calculateCappedOptionPrice(s.kind, { spot, strike: s.strike, timeToExpiry: T, volatility }, s.maxPayoutPerUnit);
   const summary = summarizeTrade({ kind: s.kind, strike: s.strike, premium: s.premium, payoutCap: s.maxPayoutPerUnit, contractSize: s.contractSize, contracts });
   const utilization = s.maxContracts > 0 ? (s.soldContracts / s.maxContracts) * 100 : 0;
-  const expired = s.expiration * 1000 <= Date.now();
+  const expired = s.expiration * 1000 <= chainNow();
 
   const stats: { k: string; v: string; hint?: string; simulated?: boolean }[] = [
     { k: "Ask (premium)", v: `${formatPrice(s.premium)}`, hint: "Executable onchain premium per GPU-hour" },

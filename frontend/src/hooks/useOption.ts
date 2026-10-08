@@ -7,6 +7,7 @@ import { bytes32ToString, fromUsdc } from "../utils/formatters";
 import { isGpuSymbol } from "../types/markets";
 import type { OptionSeries } from "../types/options";
 import { useTransaction } from "./useTransaction";
+import { chainNow } from "../lib/clock";
 
 type RawDetails = NonNullable<ReturnType<typeof useAllSeriesRaw>["data"]>[number];
 
@@ -70,7 +71,7 @@ export function useSeries(id: number | undefined) {
   return { series: found, isLoading, isError, notFound: !isLoading && !isError && id !== undefined && !found };
 }
 
-export function isActive(s: OptionSeries, nowMs = Date.now()) {
+export function isActive(s: OptionSeries, nowMs = chainNow()) {
   return !s.settled && s.expiration * 1000 > nowMs;
 }
 
