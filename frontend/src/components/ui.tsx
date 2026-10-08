@@ -12,7 +12,7 @@ export function Logo({ className = "" }: { className?: string }) {
         <path d="M9 21l5-6 4 4 5-8" fill="none" stroke="var(--color-primary)" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
         <path d="M4 11h-2M4 16h-2M4 21h-2M28 11h2M28 16h2M28 21h2" stroke="var(--color-dim)" strokeWidth="1.6" />
       </svg>
-      <span className="text-[17px] font-bold tracking-tight">
+      <span className="font-heading text-[17px] font-bold tracking-tight">
         Gpu<span className="text-primary">Hedger</span>
       </span>
     </Link>
@@ -22,7 +22,7 @@ export function Logo({ className = "" }: { className?: string }) {
 export function OptionTypeBadge({ kind, className = "" }: { kind: OptionKind; className?: string }) {
   return (
     <span
-      className={`chip ${kind === "CALL" ? "border-pos/30 bg-pos/10 text-pos" : "border-neg/30 bg-neg/10 text-neg"} ${className}`}
+      className={`chip ${kind === "CALL" ? "border-call/35 bg-call/10 text-call" : "border-put/35 bg-put/10 text-put"} ${className}`}
     >
       {kind}
     </span>
@@ -88,9 +88,9 @@ export function KeyValue({ label, value, valueClass = "", hint }: { label: strin
 export function ExplorerLink({ hash, address, label }: { hash?: string; address?: string; label?: string }) {
   const url = hash ? txUrl(hash) : address ? addressUrl(address) : undefined;
   const text = label ?? (hash ? shortHash(hash) : shortAddress(address));
-  if (!url) return <span className="num text-muted">{text}</span>;
+  if (!url) return <span className="mono text-muted">{text}</span>;
   return (
-    <a href={url} target="_blank" rel="noreferrer" className="num text-secondary underline-offset-4 hover:underline">
+    <a href={url} target="_blank" rel="noreferrer" className="mono text-secondary underline-offset-4 hover:underline">
       {text} ↗
     </a>
   );
@@ -120,6 +120,19 @@ export function ErrorNote({ children }: { children: ReactNode }) {
   return (
     <div role="alert" className="rounded-lg border border-neg/30 bg-neg/10 px-3 py-2.5 text-sm text-neg">
       {children}
+    </div>
+  );
+}
+
+/** Shown wherever a screen needs the oracle price and the read failed. Trading stays disabled. */
+export function OracleUnavailable({ gpu, className = "" }: { gpu?: string; className?: string }) {
+  return (
+    <div role="alert" className={`rounded-lg border border-warn/40 bg-warn/[0.06] px-4 py-3 text-sm ${className}`}>
+      <div className="font-semibold text-warn">Oracle unavailable</div>
+      <p className="mt-1 text-muted">
+        The {gpu ? `${gpu} ` : ""}price couldn't be read from the ComputeOracle contract, so pricing and trading are paused on this
+        screen. Check your connection; it retries automatically every few seconds.
+      </p>
     </div>
   );
 }

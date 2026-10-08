@@ -11,7 +11,7 @@ import { formatNumber, formatPrice, formatSignedUsd, formatTenor, formatUsd, pnl
 import { FuturesPositions } from "../components/FuturesPositions";
 import { TransactionStatus } from "../components/TransactionStatus";
 import { ConnectButton, SwitchNetworkButton, useWrongNetwork } from "../components/WalletButton";
-import { EmptyState, KeyValue, OnchainTag, SectionHeader, Skeleton, Spinner } from "../components/ui";
+import { EmptyState, KeyValue, OnchainTag, OracleUnavailable, SectionHeader, Skeleton, Spinner } from "../components/ui";
 
 export function FuturesPage() {
   const { markets, isLoading } = useFuturesMarkets();
@@ -28,14 +28,14 @@ export function FuturesPage() {
       </SectionHeader>
       <div className="mb-6 grid gap-3 md:grid-cols-2">
         <div className="panel p-4 text-sm">
-          <span className="chip border-pos/30 bg-pos/10 text-pos">LONG</span>
+          <span className="chip border-call/35 bg-call/10 text-call">LONG</span>
           <p className="mt-2 text-muted">
             <b className="text-fg">For AI startups.</b> Lock in what you'll pay per GPU-hour. If the price rises above the forward,
             the gain offsets your higher compute bill; if it falls, you pay the difference — your net cost stays near the forward.
           </p>
         </div>
         <div className="panel p-4 text-sm">
-          <span className="chip border-neg/30 bg-neg/10 text-neg">SHORT</span>
+          <span className="chip border-put/35 bg-put/10 text-put">SHORT</span>
           <p className="mt-2 text-muted">
             <b className="text-fg">For GPU providers.</b> Lock in what you'll earn per GPU-hour. If rental prices fall, the short pays
             you the difference.
@@ -53,8 +53,8 @@ export function FuturesPage() {
         <>
           <div className="grid gap-3 md:grid-cols-3">
             {markets.map((m) => {
-              const spot = prices.find((p) => p.gpu === m.gpu)?.price ?? 0;
-              const basis = spot > 0 ? ((m.forwardPrice - spot) / spot) * 100 : 0;
+              const spot = prices.find((p) => p.gpu === m.gpu)?.price;
+              const basis = spot ? ((m.forwardPrice - spot) / spot) * 100 : undefined;
               const expired = m.expiration <= now;
               return (
                 <button
@@ -71,8 +71,8 @@ export function FuturesPage() {
                   </div>
                   <div className="num mt-3 grid grid-cols-3 gap-2 border-t border-line pt-3 text-xs">
                     <div><div className="text-[10px] uppercase text-dim">Forward</div><div className="text-sm font-semibold">{formatPrice(m.forwardPrice)}</div></div>
-                    <div><div className="text-[10px] uppercase text-dim">Spot</div><div className="text-sm">{formatPrice(spot)}</div></div>
-                    <div><div className="text-[10px] uppercase text-dim">Basis</div><div className="text-sm">{basis >= 0 ? "+" : "−"}{Math.abs(basis).toFixed(1)}%</div></div>
+                    <div><div className="text-[10px] uppercase text-dim">Spot</div><div className="text-sm">{spot !== undefined ? formatPrice(spot) : "—"}</div></div>
+                    <div><div className="text-[10px] uppercase text-dim">Basis</div><div className="text-sm">{basis === undefined ? "—" : `${basis >= 0 ? "+" : "−"}${Math.abs(basis).toFixed(1)}%`}</div></div>
                   </div>
                   <div className="mt-2 text-[11px] text-dim">
                     OI {formatNumber(m.longContracts)} long / {formatNumber(m.shortContracts)} short · band ±{formatPrice(m.band)}
@@ -81,12 +81,18 @@ export function FuturesPage() {
               );
             })}
           </div>
-          {selected && <FuturesTrade market={selected} spot={prices.find((p) => p.gpu === selected.gpu)?.price ?? selected.forwardPrice} />}
+          {selected && <SelectedFuture market={selected} spot={prices.find((p) => p.gpu === selected.gpu)} />}
         </>
       )}
       <FuturesPositions title="Your futures positions" />
     </div>
   );
+}
+
+/** Never fall back to the forward price as "spot": P&L would read as zero and look real. */
+function SelectedFuture({ market, spot }: { market: FuturesMarket; spot?: { price?: number; isLoading: boolean } }) {
+  if (spot?.price === undefined) return spot?.isLoading ? <Skeleton className="mt-6 h-80" /> : <OracleUnavailable gpu={market.gpu} className="mt-6" />;
+  return <FuturesTrade market={market} spot={spot.price} />;
 }
 
 function FuturesTrade({ market: m, spot }: { market: FuturesMarket; spot: number }) {
@@ -133,7 +139,7 @@ function FuturesTrade({ market: m, spot }: { market: FuturesMarket; spot: number
     );
   else
     action = (
-      <button className={`${side === "LONG" ? "btn-pos" : "btn-neg"} w-full py-3`} disabled={busy} onClick={() => { setLast("open"); tx.open(m, side, qty); }}>
+      <button className={"btn-primary w-full py-3"} disabled={busy} onClick={() => { setLast("open"); tx.open(m, side, qty); }}>
         {busy && <Spinner />} OPEN {side}
       </button>
     );
@@ -150,14 +156,14 @@ function FuturesTrade({ market: m, spot }: { market: FuturesMarket; spot: number
         <div className="h-64 w-full">
           <ResponsiveContainer width="100%" height="100%">
             <LineChart data={data} margin={{ top: 16, right: 12, bottom: 4, left: 4 }}>
-              <CartesianGrid stroke="var(--color-line)" vertical={false} />
+              <CartesianGrid stroke="var(--color-chart-grid)" vertical={false} />
               <XAxis dataKey="spot" type="number" domain={["dataMin", "dataMax"]} tickFormatter={(v: number) => `$${v.toFixed(2)}`} tick={{ fill: "var(--color-dim)", fontSize: 11 }} stroke="var(--color-line-2)" />
               <YAxis tickFormatter={(v: number) => `${v < 0 ? "−" : ""}$${Math.abs(v).toFixed(0)}`} tick={{ fill: "var(--color-dim)", fontSize: 11 }} stroke="var(--color-line-2)" width={60} />
               <Tooltip
                 cursor={{ stroke: "var(--color-line-2)" }}
                 content={({ active, payload }) =>
                   active && payload?.length ? (
-                    <div className="rounded-lg border border-line-2 bg-panel px-3 py-2 text-xs shadow-xl">
+                    <div className="popover px-3 py-2 text-xs">
                       <div className="num text-muted">{m.gpu} at expiry {formatPrice(Number((payload[0].payload as { spot: number }).spot))}/h</div>
                       <div className={`num font-semibold ${pnlClass(Number(payload[0].value))}`}>{formatSignedUsd(Number(payload[0].value))}</div>
                     </div>
@@ -181,7 +187,7 @@ function FuturesTrade({ market: m, spot }: { market: FuturesMarket; spot: number
       <div className="panel p-4 sm:p-5">
         <div className="grid grid-cols-2 gap-1 rounded-lg border border-line bg-bg p-0.5">
           {(["LONG", "SHORT"] as FuturesSide[]).map((s) => (
-            <button key={s} onClick={() => setSide(s)} className={`seg py-2 ${side === s ? (s === "LONG" ? "bg-pos/15 text-pos" : "bg-neg/15 text-neg") : "text-muted"}`}>
+            <button key={s} onClick={() => setSide(s)} className={`seg py-2 ${side === s ? (s === "LONG" ? "bg-call/15 text-call" : "bg-put/15 text-put") : "text-muted"}`}>
               {s}
             </button>
           ))}
@@ -201,7 +207,7 @@ function FuturesTrade({ market: m, spot }: { market: FuturesMarket; spot: number
           <KeyValue label="Premium" value="None" />
           <div className="flex items-baseline justify-between py-2.5">
             <span className="text-sm font-semibold">Margin posted</span>
-            <span className="num text-lg font-semibold text-primary">{formatUsd(margin)}</span>
+            <span className="num text-lg font-semibold text-fg">{formatUsd(margin)}</span>
           </div>
         </div>
         <label className="mt-3 flex items-start gap-2 text-xs text-fg/90">

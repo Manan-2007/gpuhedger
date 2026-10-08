@@ -43,7 +43,7 @@ export function FuturesPositions({ title = "Futures positions" }: { title?: stri
                     {p.market.gpu} <span className="text-xs font-normal text-dim">#{p.market.id}</span>
                   </td>
                   <td className="px-4 py-3">
-                    <span className={`chip ${p.side === "LONG" ? "border-pos/30 bg-pos/10 text-pos" : "border-neg/30 bg-neg/10 text-neg"}`}>{p.side}</span>
+                    <span className={`chip ${p.side === "LONG" ? "border-call/35 bg-call/10 text-call" : "border-put/35 bg-put/10 text-put"}`}>{p.side}</span>
                   </td>
                   <td className="num px-4 py-3">{formatPrice(p.market.forwardPrice)}</td>
                   <td className="num px-4 py-3">{formatNumber(p.contracts)}</td>

@@ -105,13 +105,13 @@ export function TradePanel({ series, spot, volatility, contracts, onContractsCha
     );
   else
     action = (
-      <button className={`${series.kind === "CALL" ? "btn-pos" : "btn-neg"} w-full py-3 text-base`} onClick={onBuy} disabled={busy}>
+      <button className={"btn-primary w-full py-3 text-base"} onClick={onBuy} disabled={busy}>
         {busy && <Spinner />} BUY {series.kind}
       </button>
     );
 
   return (
-    <div className="panel p-4 sm:p-5" id="trade-panel">
+    <div className="panel-solid p-4 sm:p-5" id="trade-panel">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <span className="font-semibold">{series.gpu}</span>
@@ -158,7 +158,7 @@ export function TradePanel({ series, spot, volatility, contracts, onContractsCha
         <KeyValue label="Collateral backing" value={formatUsd(summary.collateralBacking)} hint="Writer collateral locked onchain for these contracts" />
         <div className="flex items-baseline justify-between py-2.5">
           <span className="text-sm font-semibold">Total cost</span>
-          <span className="num text-lg font-semibold text-primary">{formatUsd(summary.totalPremium)}</span>
+          <span className="num text-lg font-semibold text-fg">{formatUsd(summary.totalPremium)}</span>
         </div>
       </div>
 

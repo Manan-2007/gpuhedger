@@ -8,7 +8,7 @@ import { GPU_SYMBOLS, type GpuSymbol } from "../types/markets";
 import type { OptionSeries } from "../types/options";
 import type { FuturesMarket } from "../hooks/useFutures";
 import { formatNumber, formatPrice, formatTenor, formatUsd } from "../utils/formatters";
-import { EmptyState, OptionTypeBadge, SectionHeader, SimulatedTag } from "../components/ui";
+import { EmptyState, OptionTypeBadge, OracleUnavailable, SectionHeader, SimulatedTag } from "../components/ui";
 
 type Role = "BUYER" | "PROVIDER";
 
@@ -49,7 +49,9 @@ export function HedgePage() {
   const [role, setRole] = useState<Role>("BUYER");
   const [gpu, setGpu] = useState<GpuSymbol>("H100");
   const [hours, setHours] = useState(5000);
-  const spot = prices.find((p) => p.gpu === gpu)?.price ?? 0;
+  const oracle = prices.find((p) => p.gpu === gpu);
+  // 0 disables every calculation below; the UI shows "Oracle unavailable" instead of a made-up price.
+  const spot = oracle?.price ?? 0;
   const [targetInput, setTargetInput] = useState("");
   const [stressInput, setStressInput] = useState("");
   const target = targetInput === "" ? (role === "BUYER" ? spot * 1.15 : spot * 0.88) : Number(targetInput);
@@ -160,14 +162,16 @@ export function HedgePage() {
             <input className="input" inputMode="decimal" placeholder={stress.toFixed(2)} value={stressInput} onChange={(e) => setStressInput(e.target.value.replace(/[^\d.]/g, ""))} />
           </Field>
           <div className="rounded-lg border border-line bg-bg/50 p-3 text-sm">
-            <div className="flex justify-between"><span className="text-muted">{gpu} today (oracle)</span><span className="num">{formatPrice(spot)}/h</span></div>
-            <div className="flex justify-between"><span className="text-muted">Exposure today</span><span className="num">{formatUsd(spot * hours, 0)}</span></div>
-            <div className="flex justify-between"><span className="text-muted">Unhedged {noun} in stress</span><span className={`num ${role === "BUYER" ? "text-neg" : "text-neg"}`}>{formatUsd(unhedgedStress, 0)}</span></div>
+            <div className="flex justify-between"><span className="text-muted">{gpu} today (oracle)</span><span className="num">{oracle?.price !== undefined ? `${formatPrice(spot)}/h` : "—"}</span></div>
+            <div className="flex justify-between"><span className="text-muted">Exposure today</span><span className="num">{oracle?.price !== undefined ? formatUsd(spot * hours, 0) : "—"}</span></div>
+            <div className="flex justify-between"><span className="text-muted">Unhedged {noun} in stress</span><span className={`num ${"text-neg"}`}>{formatUsd(unhedgedStress, 0)}</span></div>
           </div>
         </div>
 
         <div className="min-w-0 space-y-6">
-          {hours <= 0 || spot <= 0 ? (
+          {oracle?.unavailable ? (
+            <OracleUnavailable gpu={gpu} />
+          ) : hours <= 0 || spot <= 0 ? (
             <EmptyState title="Enter your compute needs" body="Tell us how many GPU-hours you need to see hedge options." />
           ) : !best ? (
             <EmptyState title="No live hedge covers this size" body="Try fewer GPU-hours or another GPU. Admins can create more capacity." />
@@ -178,7 +182,7 @@ export function HedgePage() {
                   <div>
                     <div className="label text-primary">Recommended hedge</div>
                     <div className="mt-1.5 flex items-center gap-2 text-lg font-semibold">
-                      {best.series ? <OptionTypeBadge kind={best.series.kind} /> : <span className={`chip ${role === "BUYER" ? "border-pos/30 text-pos" : "border-neg/30 text-neg"}`}>{role === "BUYER" ? "LONG" : "SHORT"}</span>}
+                      {best.series ? <OptionTypeBadge kind={best.series.kind} /> : <span className={`chip ${role === "BUYER" ? "border-call/35 text-call" : "border-put/35 text-put"}`}>{role === "BUYER" ? "LONG" : "SHORT"}</span>}
                       {gpu} {best.label}
                     </div>
                     <div className="mt-1 text-sm text-muted">
@@ -218,14 +222,14 @@ export function HedgePage() {
                 <div className="mt-2 h-72 w-full">
                   <ResponsiveContainer width="100%" height="100%">
                     <LineChart data={chart} margin={{ top: 16, right: 12, bottom: 4, left: 8 }}>
-                      <CartesianGrid stroke="var(--color-line)" vertical={false} />
+                      <CartesianGrid stroke="var(--color-chart-grid)" vertical={false} />
                       <XAxis dataKey="price" type="number" domain={["dataMin", "dataMax"]} tickFormatter={(v: number) => `$${v.toFixed(2)}`} tick={{ fill: "var(--color-dim)", fontSize: 11 }} stroke="var(--color-line-2)" />
                       <YAxis tickFormatter={(v: number) => (v >= 1000 ? `$${(v / 1000).toFixed(0)}k` : `$${v}`)} tick={{ fill: "var(--color-dim)", fontSize: 11 }} stroke="var(--color-line-2)" width={56} />
                       <Tooltip
                         cursor={{ stroke: "var(--color-line-2)" }}
                         content={({ active, payload }) =>
                           active && payload?.length ? (
-                            <div className="rounded-lg border border-line-2 bg-panel px-3 py-2 text-xs shadow-xl">
+                            <div className="popover px-3 py-2 text-xs">
                               <div className="num mb-1 text-muted">{gpu} at {formatPrice((payload[0].payload as { price: number }).price)}/h</div>
                               {payload.map((p) => (
                                 <div key={String(p.dataKey)} className="flex justify-between gap-6">
@@ -237,7 +241,7 @@ export function HedgePage() {
                           ) : null
                         }
                       />
-                      <ReferenceLine x={spot} stroke="var(--color-fg)" strokeOpacity={0.5} label={{ value: "Today", position: "top", fill: "var(--color-fg)", fontSize: 11 }} />
+                      <ReferenceLine x={spot} stroke="var(--color-secondary)" label={{ value: "Today", position: "top", fill: "var(--color-secondary)", fontSize: 11 }} />
                       <ReferenceLine x={stress} stroke="var(--color-neg)" strokeOpacity={0.6} strokeDasharray="3 3" label={{ value: "Stress", position: "top", fill: "var(--color-muted)", fontSize: 11 }} />
                       <Line type="linear" dataKey="unhedged" stroke="var(--color-muted)" strokeWidth={2} dot={false} isAnimationActive={false} />
                       {bestOption && <Line type="linear" dataKey="option" stroke="var(--color-primary)" strokeWidth={2} dot={false} isAnimationActive={false} />}

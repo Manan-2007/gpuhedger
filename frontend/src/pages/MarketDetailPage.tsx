@@ -9,7 +9,7 @@ import { PriceChart } from "../components/PriceChart";
 import { PayoffChart } from "../components/PayoffChart";
 import { TradePanel } from "../components/TradePanel";
 import { indicativeBid } from "../components/MarketTable";
-import { EmptyState, ExplorerLink, KeyValue, OnchainTag, OptionTypeBadge, Skeleton } from "../components/ui";
+import { EmptyState, ExplorerLink, KeyValue, OnchainTag, OptionTypeBadge, OracleUnavailable, Skeleton } from "../components/ui";
 import { useNow } from "../hooks/useNow";
 
 export function MarketDetailPage() {
@@ -42,11 +42,37 @@ export function MarketDetailPage() {
   return <Detail series={series} contracts={contracts} setContracts={setContracts} />;
 }
 
-function Detail({ series: s, contracts, setContracts }: { series: NonNullable<ReturnType<typeof useSeries>["series"]>; contracts: number; setContracts: (n: number) => void }) {
+type SeriesView = NonNullable<ReturnType<typeof useSeries>["series"]>;
+
+/** Gate: nothing on this page is priced until the oracle has answered. */
+function Detail({ series: s, contracts, setContracts }: { series: SeriesView; contracts: number; setContracts: (n: number) => void }) {
   const oracle = useGpuPrice(s.gpu);
-  const spot = oracle.price;
+  if (oracle.price === undefined || oracle.volatility === undefined) {
+    return (
+      <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6">
+        <Link to="/markets" className="text-sm text-muted hover:text-fg">← All markets</Link>
+        <div className="mt-4 flex flex-wrap items-center gap-2.5">
+          <h1 className="text-3xl font-bold tracking-tight">{s.gpu}</h1>
+          <OptionTypeBadge kind={s.kind} className="text-xs" />
+          <span className="num text-sm text-muted">Strike {formatPrice(s.strike)}/GPU-h · expires {formatDate(s.expiration)}</span>
+        </div>
+        {oracle.isLoading ? <Skeleton className="mt-6 h-80 w-full" /> : <OracleUnavailable gpu={s.gpu} className="mt-6" />}
+      </div>
+    );
+  }
+  return <DetailBody series={s} contracts={contracts} setContracts={setContracts} spot={oracle.price} volatility={oracle.volatility} updatedAt={oracle.updatedAt} />;
+}
+
+function DetailBody({ series: s, contracts, setContracts, spot, volatility, updatedAt }: {
+  series: SeriesView;
+  contracts: number;
+  setContracts: (n: number) => void;
+  spot: number;
+  volatility: number;
+  updatedAt?: number;
+}) {
   const T = yearsUntil(s.expiration);
-  const model = calculateCappedOptionPrice(s.kind, { spot, strike: s.strike, timeToExpiry: T, volatility: oracle.volatility }, s.maxPayoutPerUnit);
+  const model = calculateCappedOptionPrice(s.kind, { spot, strike: s.strike, timeToExpiry: T, volatility }, s.maxPayoutPerUnit);
   const summary = summarizeTrade({ kind: s.kind, strike: s.strike, premium: s.premium, payoutCap: s.maxPayoutPerUnit, contractSize: s.contractSize, contracts });
   const itm = s.kind === "CALL" ? spot > s.strike : spot < s.strike;
   const utilization = s.maxContracts > 0 ? (s.soldContracts / s.maxContracts) * 100 : 0;
@@ -58,7 +84,7 @@ function Detail({ series: s, contracts, setContracts }: { series: NonNullable<Re
     ["Expiration", formatTenor(s.expiration)],
     ["Contract size", `${formatNumber(s.contractSize)} GPU-h`],
     ["Premium", formatPrice(s.premium)],
-    ["Implied vol", `${Math.round(oracle.volatility * 100)}%`],
+    ["Implied vol", `${Math.round(volatility * 100)}%`],
     ["Open interest", formatNumber(s.openContracts)],
     ["Bid*", formatPrice(indicativeBid(s.premium))],
     ["Ask", formatPrice(s.premium)],
@@ -86,12 +112,12 @@ function Detail({ series: s, contracts, setContracts }: { series: NonNullable<Re
           <div className="label">{s.gpu} oracle price</div>
           <div className="num text-3xl font-semibold">{formatPrice(spot)}<span className="ml-1 text-sm text-dim">/GPU-h</span></div>
           <div className="text-xs text-dim">
-            {oracle.isLive && oracle.updatedAt ? `Updated ${timeAgo(oracle.updatedAt)} · onchain` : "Simulated fallback"}
+            {updatedAt ? `Updated ${timeAgo(updatedAt)} · onchain` : "Onchain"}
           </div>
         </div>
       </div>
 
-      <div className="panel mt-6 grid grid-cols-3 divide-line sm:grid-cols-5 lg:grid-cols-9 lg:divide-x">
+      <div className="panel-solid mt-6 grid grid-cols-3 divide-line sm:grid-cols-5 lg:grid-cols-9 lg:divide-x">
         {stats.map(([k, v, cls]) => (
           <div key={k} className="px-4 py-3">
             <div className="label text-[10px]">{k}</div>
@@ -104,7 +130,7 @@ function Detail({ series: s, contracts, setContracts }: { series: NonNullable<Re
         <div className="min-w-0 space-y-6">
           <div className="panel p-4 sm:p-5">
             <h2 className="mb-3 font-semibold">{s.gpu} price history</h2>
-            <PriceChart gpu={s.gpu} price={spot} volatility={oracle.volatility} />
+            <PriceChart gpu={s.gpu} price={spot} volatility={volatility} />
           </div>
 
           <div className="panel p-4 sm:p-5">
@@ -122,7 +148,7 @@ function Detail({ series: s, contracts, setContracts }: { series: NonNullable<Re
               contractSize={s.contractSize}
               contracts={contracts}
               spot={spot}
-              volatility={oracle.volatility}
+              volatility={volatility}
               expiration={s.expiration}
               gpuLabel={s.gpu}
             />
@@ -164,14 +190,14 @@ function Detail({ series: s, contracts, setContracts }: { series: NonNullable<Re
         </div>
 
         <div className="lg:sticky lg:top-20 lg:self-start">
-          <TradePanel series={s} spot={spot} volatility={oracle.volatility} contracts={contracts} onContractsChange={setContracts} />
+          <TradePanel series={s} spot={spot} volatility={volatility} contracts={contracts} onContractsChange={setContracts} />
         </div>
       </div>
 
       {/* Mobile sticky CTA */}
       {!expired && (
         <div className="fixed inset-x-0 bottom-0 z-30 border-t border-line bg-bg/95 p-3 backdrop-blur lg:hidden">
-          <a href="#trade-panel" className={`${s.kind === "CALL" ? "btn-pos" : "btn-neg"} w-full py-3`}>
+          <a href="#trade-panel" className={"btn-primary w-full py-3"}>
             BUY {s.kind} · {formatUsd(summary.totalPremium)}
           </a>
         </div>

@@ -34,7 +34,7 @@ export function OptionSelector({
   };
 
   return (
-    <div className="panel space-y-5 p-4 sm:p-5">
+    <div className="panel-solid space-y-5 p-4 sm:p-5">
       <Step n="01" title="Choose your GPU">
         <div className="grid grid-cols-3 gap-2">
           {GPU_SYMBOLS.map((g) => (
@@ -61,12 +61,12 @@ export function OptionSelector({
               className={`rounded-lg border px-3 py-2.5 text-left transition-colors ${
                 selection.kind === k
                   ? k === "CALL"
-                    ? "border-pos/60 bg-pos/[0.08]"
-                    : "border-neg/60 bg-neg/[0.08]"
+                    ? "border-call/60 bg-call/[0.08]"
+                    : "border-put/60 bg-put/[0.08]"
                   : "border-line hover:border-line-2"
               }`}
             >
-              <div className={`font-semibold ${k === "CALL" ? "text-pos" : "text-neg"}`}>{k}</div>
+              <div className={`font-semibold ${k === "CALL" ? "text-call" : "text-put"}`}>{k}</div>
               <div className="text-xs text-muted">{k === "CALL" ? "Protects against rising prices" : "Protects against falling prices"}</div>
             </button>
           ))}

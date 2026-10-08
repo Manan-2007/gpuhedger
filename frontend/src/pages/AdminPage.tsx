@@ -51,7 +51,7 @@ export function AdminPage() {
           <RoleChip ok={roles.isWriter} label="Writer" />
           <RoleChip ok={roles.isPauser} label="Pauser" />
           {hasVault && <RoleChip ok={roles.isVaultManager} label="Vault mgr" />}
-          <span className={`chip ${roles.paused ? "border-neg/40 text-neg" : "border-pos/30 text-pos"}`}>{roles.paused ? "Paused" : "Live"}</span>
+          <span className={`chip ${roles.paused ? "border-warn/40 text-warn" : "border-pos/30 text-pos"}`}>{roles.paused ? "Paused" : "Live"}</span>
         </div>
       </SectionHeader>
 
@@ -344,7 +344,7 @@ function CreateSeriesPanel({ enabled, vaultEnabled }: { enabled: boolean; vaultE
         <div><div className="label text-[10px]">Spot</div><div className="num">{formatPrice(spot)}</div></div>
         <div><div className="label text-[10px]">Model price</div><div className="num">{formatPrice(model)}</div></div>
         <div><div className="label text-[10px]">Premium</div><div className="num">{formatPrice(premiumN)}{premium === "" && <span className="text-dim"> (model+8%)</span>}</div></div>
-        <div><div className="label text-[10px]">Collateral required</div><div className="num font-semibold text-primary">{formatUsd(collateral, 0)}</div></div>
+        <div><div className="label text-[10px]">Collateral required</div><div className="num font-semibold text-fg">{formatUsd(collateral, 0)}</div></div>
       </div>
       <p className="mt-2 text-xs text-muted">
         Fully collateralized: cap × size × capacity is transferred from {viaVault ? "the LP vault" : "your wallet"} into the new series and
@@ -575,7 +575,7 @@ function FuturesAdminPanel({ enabled }: { enabled: boolean }) {
         </div>
         <p className="mt-3 text-xs text-muted">
           100 GPU-hours per contract. You take the other side of every position and post band × 100 × capacity ={" "}
-          <span className="num font-semibold text-primary">{formatUsd(collateral, 0)}</span> collateral. Spot {formatPrice(spot)}.
+          <span className="num font-semibold text-fg">{formatUsd(collateral, 0)}</span> collateral. Spot {formatPrice(spot)}.
         </p>
         <div className="mt-3 flex flex-wrap gap-2">
           {usdc.allowanceRaw < collateralRaw ? (

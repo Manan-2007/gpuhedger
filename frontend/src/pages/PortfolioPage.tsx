@@ -13,7 +13,7 @@ import { formatNumber, formatPrice, formatSignedUsd, formatUsd, pnlClass, timeAg
 import { PositionTable } from "../components/PositionTable";
 import { TransactionStatus } from "../components/TransactionStatus";
 import { ConnectButton, SwitchNetworkButton, useWrongNetwork } from "../components/WalletButton";
-import { EmptyState, ErrorNote, ExplorerLink, OnchainTag, SectionHeader, Skeleton, Spinner, StatCard } from "../components/ui";
+import { EmptyState, ErrorNote, ExplorerLink, OnchainTag, OracleUnavailable, SectionHeader, Skeleton, Spinner, StatCard } from "../components/ui";
 
 type Tab = "OPEN" | "EXERCISED" | "EXPIRED" | "ALL";
 
@@ -103,6 +103,7 @@ function Portfolio() {
       <SectionHeader eyebrow="Portfolio" title="Your compute hedges">
         <OnchainTag label="Live · updates every block" />
       </SectionHeader>
+      {prices.some((p) => p.unavailable) && <OracleUnavailable className="mb-6" />}
 
       <div className="grid gap-4 lg:grid-cols-[1fr_340px]">
         <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
@@ -116,8 +117,8 @@ function Portfolio() {
               {prices.map((p) => (
                 <div key={p.gpu}>
                   <span className="text-sm font-semibold">{p.gpu}</span>{" "}
-                  <span className="num text-sm">{formatPrice(p.price)}</span>
-                  <div className="text-[11px] text-dim">{p.updatedAt ? `updated ${timeAgo(p.updatedAt)}` : "simulated"}</div>
+                  <span className="num text-sm">{p.price !== undefined ? formatPrice(p.price) : "—"}</span>
+                  <div className={`text-[11px] ${p.unavailable ? "text-warn" : "text-dim"}`}>{p.updatedAt ? `updated ${timeAgo(p.updatedAt)}` : p.unavailable ? "oracle unavailable" : "loading…"}</div>
                 </div>
               ))}
             </div>

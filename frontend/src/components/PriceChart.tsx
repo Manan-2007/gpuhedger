@@ -75,7 +75,7 @@ export function PriceChart({ gpu, price, volatility, height = 260 }: { gpu: GpuS
                   <stop offset="100%" stopColor="var(--color-secondary)" stopOpacity={0} />
                 </linearGradient>
               </defs>
-              <CartesianGrid stroke="var(--color-line)" vertical={false} />
+              <CartesianGrid stroke="var(--color-chart-grid)" vertical={false} />
               <XAxis
                 dataKey="t"
                 type="number"
@@ -98,7 +98,7 @@ export function PriceChart({ gpu, price, volatility, height = 260 }: { gpu: GpuS
                 cursor={{ stroke: "var(--color-line-2)" }}
                 content={({ active, payload }) =>
                   active && payload?.length ? (
-                    <div className="rounded-lg border border-line-2 bg-panel px-3 py-2 text-xs shadow-xl">
+                    <div className="popover px-3 py-2 text-xs">
                       <div className="text-muted">{formatDateTime((payload[0].payload as { t: number }).t / 1000)}</div>
                       <div className="num mt-0.5 font-semibold text-fg">{formatPrice(Number(payload[0].value))} / GPU-h</div>
                     </div>

@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { useMarkets } from "../hooks/useOption";
-import { useAllGpuPrices } from "../hooks/useOracle";
+import { useAllGpuPrices, useLivePriceMap } from "../hooks/useOracle";
 import { GPU_META, marketData } from "../data/marketData";
 import { GPU_SYMBOLS, isGpuSymbol, type GpuSymbol } from "../types/markets";
 import type { OptionKind } from "../types/options";
@@ -17,7 +17,7 @@ export function MarketsPage() {
   const [params, setParams] = useSearchParams();
   const { series, isLoading, isError } = useMarkets();
   const prices = useAllGpuPrices();
-  const priceMap = Object.fromEntries(prices.map((p) => [p.gpu, p.price])) as Record<GpuSymbol, number>;
+  const priceMap = useLivePriceMap();
 
   const gpuParam = params.get("gpu") ?? "ALL";
   const gpu: GpuSymbol | "ALL" = isGpuSymbol(gpuParam) ? gpuParam : "ALL";
@@ -86,14 +86,14 @@ export function MarketsPage() {
                   <div className="text-xs text-muted">{GPU_META[p.gpu].name}</div>
                 </div>
                 <div className="text-right">
-                  <div className="num text-xl font-semibold">{formatPrice(p.price)}</div>
-                  <div className="text-[11px] text-dim">{p.isLive ? "oracle · $/GPU-h" : "simulated"}</div>
+                  <div className="num text-xl font-semibold">{p.price !== undefined ? formatPrice(p.price) : "—"}</div>
+                  <div className={`text-[11px] ${p.unavailable ? "text-warn" : "text-dim"}`}>{p.isLive ? "oracle · $/GPU-h" : p.unavailable ? "oracle unavailable" : "loading…"}</div>
                 </div>
               </div>
               <div className="num mt-3 grid grid-cols-4 gap-2 border-t border-line pt-3 text-xs">
                 <Stat k="24h" v={formatPct(st.change24h)} cls={st.change24h >= 0 ? "text-pos" : "text-neg"} />
                 <Stat k="7d" v={formatPct(st.change7d)} cls={st.change7d >= 0 ? "text-pos" : "text-neg"} />
-                <Stat k="Vol (IV)" v={`${Math.round(p.volatility * 100)}%`} />
+                <Stat k="Vol (IV)" v={p.volatility !== undefined ? `${Math.round(p.volatility * 100)}%` : "—"} />
                 <Stat k="24h GPU-h" v={formatCompact(st.volume24h)} />
               </div>
             </button>

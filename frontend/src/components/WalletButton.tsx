@@ -16,7 +16,7 @@ export function SwitchNetworkButton({ className = "" }: { className?: string }) 
   const { switchChain, isPending, error } = useSwitchChain();
   return (
     <div className="flex flex-col items-stretch gap-1">
-      <button className={`btn-neg ${className}`} onClick={() => switchChain({ chainId: activeChain.id })} disabled={isPending}>
+      <button className={`btn-primary ${className}`} onClick={() => switchChain({ chainId: activeChain.id })} disabled={isPending}>
         {isPending && <Spinner />}
         SWITCH TO {activeChain.name.toUpperCase()}
       </button>
@@ -53,7 +53,7 @@ export function ConnectButton({ className = "", label = "CONNECT WALLET" }: { cl
         {label}
       </button>
       {open && (
-        <div className="panel absolute right-0 z-50 mt-2 w-64 p-2 shadow-2xl shadow-black/60">
+        <div className="popover absolute right-0 z-50 mt-2 w-64 p-2">
           <div className="label px-2 py-1.5">Choose a wallet</div>
           {list.map((c) => (
             <button
@@ -111,12 +111,12 @@ export function WalletButton() {
       >
         <span className="hidden num text-xs text-muted sm:inline">{formatUsd(usdc.balance, 0)}</span>
         <span className="h-2 w-2 rounded-full bg-pos" />
-        <span className="num text-xs font-semibold">{shortAddress(address)}</span>
+        <span className="mono text-xs font-semibold">{shortAddress(address)}</span>
       </button>
       {open && (
-        <div className="panel absolute right-0 z-50 mt-2 w-72 p-4 shadow-2xl shadow-black/60">
+        <div className="popover absolute right-0 z-50 mt-2 w-72 p-4">
           <div className="label">Wallet</div>
-          <div className="num mt-1 break-all text-xs text-fg">{address}</div>
+          <div className="mono mt-1 break-all text-xs text-fg">{address}</div>
           <div className="mt-3 space-y-1.5 border-t border-line pt-3 text-sm">
             <div className="flex justify-between">
               <span className="text-muted">Network</span>

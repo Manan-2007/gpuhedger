@@ -107,14 +107,14 @@ export function ActivityPage() {
                     <stop offset="100%" stopColor="var(--color-primary)" stopOpacity={0} />
                   </linearGradient>
                 </defs>
-                <CartesianGrid stroke="var(--color-line)" vertical={false} />
+                <CartesianGrid stroke="var(--color-chart-grid)" vertical={false} />
                 <XAxis dataKey="t" type="number" scale="time" domain={["dataMin", "dataMax"]} tickFormatter={(t: number) => new Date(t).toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" })} tick={{ fill: "var(--color-dim)", fontSize: 11 }} stroke="var(--color-line-2)" minTickGap={40} />
                 <YAxis tickFormatter={(v: number) => `$${v}`} tick={{ fill: "var(--color-dim)", fontSize: 11 }} stroke="var(--color-line-2)" width={56} orientation="right" />
                 <Tooltip
                   cursor={{ stroke: "var(--color-line-2)" }}
                   content={({ active, payload }) =>
                     active && payload?.length ? (
-                      <div className="rounded-lg border border-line-2 bg-panel px-3 py-2 text-xs shadow-xl">
+                      <div className="popover px-3 py-2 text-xs">
                         <div className="text-muted">{formatDateTime((payload[0].payload as { t: number }).t / 1000)}</div>
                         <div className="num font-semibold text-fg">{formatUsd(Number(payload[0].value))}</div>
                       </div>
@@ -128,7 +128,7 @@ export function ActivityPage() {
         </div>
       </div>
 
-      <div className="panel mt-6 overflow-x-auto">
+      <div className="panel-solid mt-6 overflow-x-auto">
         <table className="w-full min-w-[760px] text-sm">
           <thead>
             <tr className="border-b border-line text-left">

@@ -3,7 +3,7 @@ import { useAllGpuPrices } from "../hooks/useOracle";
 import { useProtocolStats } from "../hooks/useProtocol";
 import { GPU_META, marketData } from "../data/marketData";
 import { formatNumber, formatPct, formatPrice, formatUsd } from "../utils/formatters";
-import { OnchainTag, SimulatedTag } from "../components/ui";
+import { OnchainTag } from "../components/ui";
 import { activeChain } from "../lib/chain";
 
 export function LandingPage() {
@@ -64,7 +64,7 @@ function MarketWidget() {
     <div className="panel overflow-hidden shadow-2xl shadow-black/40">
       <div className="flex items-center justify-between border-b border-line px-5 py-3.5">
         <span className="label">GPU compute · $ / GPU-hour</span>
-        {live ? <OnchainTag label="Live oracle" /> : <SimulatedTag />}
+        {live ? <OnchainTag label="Live oracle" /> : prices[0].isLoading ? null : <span className="chip border-warn/40 text-warn">Oracle unavailable</span>}
       </div>
       <div className="divide-y divide-line">
         {prices.map((p) => {
@@ -77,7 +77,7 @@ function MarketWidget() {
               </div>
               <div className="text-right">
                 <div className="num text-2xl font-semibold">
-                  {formatPrice(p.price)}
+                  {p.price !== undefined ? formatPrice(p.price) : "—"}
                   <span className="ml-1 text-xs font-normal text-dim">/ GPU-HOUR</span>
                 </div>
                 <div className={`num text-sm ${stats.change24h >= 0 ? "text-pos" : "text-neg"}`}>
@@ -89,7 +89,7 @@ function MarketWidget() {
         })}
       </div>
       <div className="border-t border-line bg-bg/40 px-5 py-2.5 text-[11px] text-dim">
-        Prices: {live ? "ComputeOracle on " + activeChain.name + " (admin-controlled demo feed)" : "simulated fallback"} · 24h change:
+        Prices: {live ? "ComputeOracle on " + activeChain.name + " (admin-controlled demo feed)" : "waiting for the onchain oracle"} · 24h change:
         simulated
       </div>
     </div>

@@ -1,12 +1,12 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { isActive, useMarkets } from "../hooks/useOption";
-import { useAllGpuPrices } from "../hooks/useOracle";
-import { isGpuSymbol, type GpuSymbol } from "../types/markets";
+import { useAllGpuPrices, useLivePriceMap } from "../hooks/useOracle";
+import { isGpuSymbol } from "../types/markets";
 import { OptionSelector, type Selection } from "../components/OptionSelector";
 import { PayoffChart } from "../components/PayoffChart";
 import { TradePanel } from "../components/TradePanel";
-import { EmptyState, ErrorNote, SectionHeader, Skeleton } from "../components/ui";
+import { EmptyState, ErrorNote, OracleUnavailable, SectionHeader, Skeleton } from "../components/ui";
 import { formatPrice, formatTenor, formatUsd } from "../utils/formatters";
 import { isConfigured } from "../contracts/addresses";
 
@@ -14,7 +14,7 @@ export function TradePage() {
   const [params, setParams] = useSearchParams();
   const { series: all, isLoading, isError } = useMarkets();
   const prices = useAllGpuPrices();
-  const priceMap = useMemo(() => Object.fromEntries(prices.map((p) => [p.gpu, p.price])) as Record<GpuSymbol, number>, [prices]);
+  const priceMap = useLivePriceMap();
   const live = useMemo(() => all.filter((s) => isActive(s)), [all]);
   const paramQty = Number(params.get("qty"));
   const [contracts, setContracts] = useState(Number.isInteger(paramQty) && paramQty > 0 ? paramQty : 10);
@@ -50,6 +50,9 @@ export function TradePage() {
 
   const selected = live.find((s) => s.id === selection.seriesId);
   const price = prices.find((p) => p.gpu === selection.gpu);
+  const spot = price?.price;
+  const volatility = price?.volatility;
+  const oracleReady = spot !== undefined && volatility !== undefined;
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-10 pb-28 sm:px-6 lg:pb-10">
@@ -70,7 +73,9 @@ export function TradePage() {
         <div className="grid gap-6 lg:grid-cols-[1fr_400px]">
           <div className="min-w-0 space-y-6">
             <OptionSelector series={live} selection={selection} onChange={onChange} prices={priceMap} />
-            {selected && price ? (
+            {selected && !oracleReady ? (
+              price?.isLoading ? <Skeleton className="h-96" /> : <OracleUnavailable gpu={selection.gpu} />
+            ) : selected && oracleReady ? (
               <div className="panel p-4 sm:p-5">
                 <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
                   <h2 className="font-semibold">
@@ -87,8 +92,8 @@ export function TradePage() {
                   payoutCap={selected.maxPayoutPerUnit}
                   contractSize={selected.contractSize}
                   contracts={contracts}
-                  spot={price.price}
-                  volatility={price.volatility}
+                  spot={spot}
+                  volatility={volatility}
                   expiration={selected.expiration}
                   gpuLabel={selected.gpu}
                 />
@@ -101,18 +106,18 @@ export function TradePage() {
             ) : null}
           </div>
           <div className="lg:sticky lg:top-20 lg:self-start">
-            {selected && price ? (
-              <TradePanel key={selected.id} series={selected} spot={price.price} volatility={price.volatility} contracts={contracts} onContractsChange={setContracts} />
-            ) : (
+            {selected && oracleReady ? (
+              <TradePanel key={selected.id} series={selected} spot={spot} volatility={volatility} contracts={contracts} onContractsChange={setContracts} />
+            ) : selected ? null : (
               <EmptyState title="Select a market" body="Choose a GPU, option type, strike and expiry to see your quote." />
             )}
           </div>
         </div>
       )}
 
-      {selected && (
+      {selected && oracleReady && (
         <div className="fixed inset-x-0 bottom-0 z-30 border-t border-line bg-bg/95 p-3 backdrop-blur lg:hidden">
-          <a href="#trade-panel" className={`${selected.kind === "CALL" ? "btn-pos" : "btn-neg"} w-full py-3`}>
+          <a href="#trade-panel" className={"btn-primary w-full py-3"}>
             BUY {selected.kind} · {formatUsd(selected.premium * selected.contractSize * contracts)}
           </a>
         </div>

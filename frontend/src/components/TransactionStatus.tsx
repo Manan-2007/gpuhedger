@@ -87,7 +87,7 @@ export function TransactionStatus({
       {state.hash && (
         <div className="mt-3 flex flex-wrap items-center justify-between gap-2 border-t border-line pt-2.5 text-xs">
           <span className="text-muted">
-            Tx <span className="num text-fg">{shortHash(state.hash)}</span>
+            Tx <span className="mono text-fg">{shortHash(state.hash)}</span>
             {state.blockNumber !== undefined && (
               <>
                 {" "}· block <span className="num text-fg">{state.blockNumber.toString()}</span>

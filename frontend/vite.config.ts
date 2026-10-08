@@ -10,7 +10,10 @@ export default defineConfig({
     chunkSizeWarningLimit: 1500,
     rollupOptions: {
       output: {
+        // React gets its own chunk; otherwise Rollup hoists it into `charts` and every page
+        // (including the landing page) has to download Recharts.
         manualChunks: {
+          react: ["react", "react-dom", "react-router-dom"],
           web3: ["wagmi", "viem", "@tanstack/react-query"],
           charts: ["recharts"],
         },

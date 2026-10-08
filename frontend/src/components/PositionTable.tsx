@@ -7,12 +7,29 @@ import { formatDate, formatDuration, formatNumber, formatPct, formatPrice, forma
 import { useWrongNetwork } from "./WalletButton";
 import { OptionTypeBadge, Spinner } from "./ui";
 
-const STATUS_STYLE = {
-  OPEN: "border-secondary/30 text-secondary",
-  EXERCISED: "border-pos/30 text-pos",
-  EXPIRED: "border-line-2 text-dim",
-  CLAIMABLE: "border-primary/40 text-primary",
-} as const;
+const DAY = 86_400;
+
+/** Position state chip: ITM teal, OTM neutral (not red), <24h to expiry amber, exercised lime, expired dim. */
+function statusChip(p: PositionView): { label: string; cls: string } {
+  switch (p.status) {
+    case "OPEN":
+      if (p.timeRemaining < DAY) return { label: `Expires in ${formatDuration(p.timeRemaining)}`, cls: "border-warn/40 bg-warn/10 text-warn" };
+      return p.intrinsicPerUnit > 0
+        ? { label: "Open · ITM", cls: "border-pos/40 bg-pos/10 text-pos" }
+        : { label: "Open · OTM", cls: "border-line-2 text-muted" };
+    case "CLAIMABLE":
+      return { label: "Claimable", cls: "border-pos/40 bg-pos/10 text-pos" };
+    case "EXERCISED":
+      return { label: "Exercised", cls: "border-primary/40 bg-primary/10 text-primary" };
+    case "EXPIRED":
+      return { label: "Expired", cls: "border-line-2 text-dim" };
+  }
+}
+
+function StatusChip({ p }: { p: PositionView }) {
+  const { label, cls } = statusChip(p);
+  return <span className={`chip whitespace-nowrap ${cls}`}>{label}</span>;
+}
 
 export type OptionActions = ReturnType<typeof useOptionActions>;
 
@@ -75,7 +92,7 @@ export function PositionTable({
   return (
     <>
       {/* Desktop */}
-      <div className="panel hidden overflow-x-auto lg:block">
+      <div className="panel-solid hidden overflow-x-auto lg:block">
         <table className="w-full min-w-[1000px] text-sm">
           <thead>
             <tr className="border-b border-line text-left">
@@ -107,7 +124,7 @@ export function PositionTable({
                     <td className="num px-4 py-3.5 text-right">{formatUsd(p.premiumPaid)}</td>
                     <td className="num px-4 py-3.5 text-right">{formatUsd(value)}</td>
                     <td className={`num px-4 py-3.5 text-right font-semibold ${pnlClass(p.pnl)}`}>{formatSignedUsd(p.pnl)}</td>
-                    <td className="px-4 py-3.5"><span className={`chip ${STATUS_STYLE[p.status]}`}>{p.status}</span></td>
+                    <td className="px-4 py-3.5"><StatusChip p={p} /></td>
                     <td className="px-4 py-3.5 text-right">{exerciseButton(p)}</td>
                   </tr>
                   {isOpen && (
@@ -137,7 +154,7 @@ export function PositionTable({
                   <OptionTypeBadge kind={p.series.kind} />
                   <span className="num text-sm text-muted">{formatPrice(p.series.strike)}</span>
                 </div>
-                <span className={`chip ${STATUS_STYLE[p.status]}`}>{p.status}</span>
+                <StatusChip p={p} />
               </div>
               <div className="mt-3 grid grid-cols-3 gap-2 text-sm">
                 <Cell k="Contracts" v={formatNumber(p.contracts)} />
