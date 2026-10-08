@@ -3,7 +3,8 @@ import type { GpuSymbol } from "./markets";
 
 export type OptionKind = "CALL" | "PUT";
 
-export type PositionStatus = "OPEN" | "EXERCISED" | "EXPIRED";
+/** CLAIMABLE = expired in the money; payout is claimed at the settlement price recorded at expiry. */
+export type PositionStatus = "OPEN" | "EXERCISED" | "EXPIRED" | "CLAIMABLE";
 
 /** An option series as read from the ComputeOption contract, normalized for the UI.
  *  USD values are floats for display/maths; the `*Raw` bigints are used for transactions. */
@@ -41,6 +42,7 @@ export interface Position {
   seriesId: number;
   option: Address;
   positionId: bigint;
+  tokenId: bigint; // PositionNFT id — positions are transferable
   owner: Address;
   contracts: number;
   premiumPaid: number; // $ total
@@ -61,4 +63,6 @@ export interface PositionView extends Position {
   distanceToStrike: number; // % spot vs strike
   timeRemaining: number; // seconds
   canExercise: boolean;
+  canClaim: boolean;
+  claimValue: number; // $ claimable at the expiry settlement price
 }

@@ -123,6 +123,21 @@ contract ComputeOracle is IComputeOracle, AccessControl {
         return data.volatilityBps;
     }
 
+    /// @notice Price in effect at `timestamp`: the most recent update at or before it (binary search).
+    function getPriceAt(bytes32 asset, uint256 timestamp) external view returns (uint256) {
+        PricePoint[] storage hist = _history[asset];
+        uint256 n = hist.length;
+        if (n == 0 || hist[0].timestamp > timestamp) revert PriceUnavailable(asset);
+        uint256 lo = 0;
+        uint256 hi = n - 1;
+        while (lo < hi) {
+            uint256 mid = (lo + hi + 1) / 2;
+            if (hist[mid].timestamp <= timestamp) lo = mid;
+            else hi = mid - 1;
+        }
+        return hist[lo].price;
+    }
+
     function isSupported(bytes32 asset) external view returns (bool) {
         return _prices[asset].supported;
     }

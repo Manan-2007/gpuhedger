@@ -10,15 +10,17 @@ library GpuHedgerTypes {
 
     enum PositionStatus {
         Open,
-        Exercised,
-        Expired
+        Exercised, // exercised before expiry, or claimed after settlement
+        Expired, // expired out of the money
+        Claimable // expired in the money; payout can be claimed
     }
 
     enum ActivityKind {
         SeriesCreated,
         Purchase,
         Exercise,
-        Expire
+        Expire,
+        Claim
     }
 
     /// @notice Parameters used to create a new option series.
@@ -78,6 +80,7 @@ library GpuHedgerTypes {
     struct UserPosition {
         uint256 seriesId;
         address option;
+        uint256 tokenId; // PositionNFT id (positions are transferable)
         Position position;
     }
 
@@ -98,10 +101,14 @@ interface IComputeOracle {
     function getPrice(bytes32 asset) external view returns (uint256 price);
     function getPriceWithTimestamp(bytes32 asset) external view returns (uint256 price, uint256 updatedAt);
     function isSupported(bytes32 asset) external view returns (bool);
+    /// @notice Price in effect at `timestamp` (the last update at or before it). Used for expiry settlement.
+    function getPriceAt(bytes32 asset, uint256 timestamp) external view returns (uint256 price);
 }
 
 interface IOptionFactory {
     function paused() external view returns (bool);
+    function positionNFT() external view returns (address);
+    function mintPosition(address to, uint256 positionId) external returns (uint256 tokenId);
     function recordActivity(
         GpuHedgerTypes.ActivityKind kind,
         address account,
@@ -111,6 +118,15 @@ interface IOptionFactory {
 }
 
 interface IComputeOption {
+    function seriesId() external view returns (uint256);
     function getOptionDetails() external view returns (GpuHedgerTypes.OptionDetails memory);
-    function getUserPositions(address user) external view returns (GpuHedgerTypes.Position[] memory);
+    function getPosition(uint256 positionId) external view returns (GpuHedgerTypes.Position memory);
+}
+
+interface IPositionNFT {
+    function mint(address to, address option, uint256 positionId) external returns (uint256 tokenId);
+    function ownerOf(uint256 tokenId) external view returns (address);
+    function balanceOf(address owner) external view returns (uint256);
+    function tokenOfOwnerByIndex(address owner, uint256 index) external view returns (uint256);
+    function positionOf(uint256 tokenId) external view returns (address option, uint256 positionId);
 }

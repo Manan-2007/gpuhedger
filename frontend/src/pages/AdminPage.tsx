@@ -2,7 +2,9 @@ import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { useAccount } from "wagmi";
 import { computeOracleAbi, optionFactoryAbi } from "../contracts/abis";
-import { contracts, isConfigured } from "../contracts/addresses";
+import { contracts, hasFutures, hasVault, isConfigured } from "../contracts/addresses";
+import { useVault, useVaultActions } from "../hooks/useVault";
+import { useFuturesActions, useFuturesMarkets } from "../hooks/useFutures";
 import { useOracle } from "../hooks/useOracle";
 import { useMarkets, useOptionActions } from "../hooks/useOption";
 import { useAdminRoles, useProtocolStats, useRecentActivity } from "../hooks/useProtocol";
@@ -48,6 +50,7 @@ export function AdminPage() {
           <RoleChip ok={roles.isOracle} label="Oracle" />
           <RoleChip ok={roles.isWriter} label="Writer" />
           <RoleChip ok={roles.isPauser} label="Pauser" />
+          {hasVault && <RoleChip ok={roles.isVaultManager} label="Vault mgr" />}
           <span className={`chip ${roles.paused ? "border-neg/40 text-neg" : "border-pos/30 text-pos"}`}>{roles.paused ? "Paused" : "Live"}</span>
         </div>
       </SectionHeader>
@@ -68,8 +71,10 @@ export function AdminPage() {
 
       <div className="mt-6 grid gap-6 xl:grid-cols-2">
         <OraclePanel enabled={canWrite && roles.isOracle} />
-        <CreateSeriesPanel enabled={canWrite && roles.isWriter} />
+        <CreateSeriesPanel enabled={canWrite && roles.isWriter} vaultEnabled={canWrite && roles.isVaultManager} />
       </div>
+
+      {hasFutures && <FuturesAdminPanel enabled={canWrite && roles.isFuturesWriter} />}
 
       <ProtocolPanel canPause={canWrite && roles.isPauser} paused={roles.paused} canMint={canWrite && roles.isUsdcOwner} />
       <SeriesPanel />
@@ -227,7 +232,11 @@ function OraclePanel({ enabled }: { enabled: boolean }) {
 
 const REGIONS = ["US-East", "US-West", "EU-West", "APAC"];
 
-function CreateSeriesPanel({ enabled }: { enabled: boolean }) {
+function CreateSeriesPanel({ enabled, vaultEnabled }: { enabled: boolean; vaultEnabled: boolean }) {
+  const vault = useVault();
+  const vaultTx = useVaultActions();
+  const [writer, setWriter] = useState<"WALLET" | "VAULT">("WALLET");
+  const viaVault = writer === "VAULT";
   const { prices } = useOracle();
   const usdc = useUSDC(contracts.optionFactory);
   const approveTx = useUSDCActions();
@@ -267,18 +276,15 @@ function CreateSeriesPanel({ enabled }: { enabled: boolean }) {
   if (kind === "PUT" && capN > strikeN) errors.push("Put cap cannot exceed strike");
   if (!(premiumN > 0) || premiumN >= capN) errors.push("Premium must be > 0 and below the cap");
   if (!(capacityN > 0)) errors.push("Capacity must be ≥ 1");
-  const insufficient = usdc.balanceRaw !== undefined && usdc.balanceRaw < collateralRaw;
-  const needsApproval = usdc.allowanceRaw < collateralRaw;
-  const busy = approveTx.isBusy || createTx.isBusy;
+  const insufficient = viaVault ? vault.idle < collateral : usdc.balanceRaw !== undefined && usdc.balanceRaw < collateralRaw;
+  const needsApproval = !viaVault && usdc.allowanceRaw < collateralRaw;
+  const busy = approveTx.isBusy || createTx.isBusy || vaultTx.isBusy;
+  const canCreate = viaVault ? vaultEnabled : enabled;
 
   const create = async () => {
     setLast("create");
-    await createTx.execute(`Create ${gpu} ${kind} ${formatPrice(strikeN)} · ${daysN}D`, {
-      address: contracts.optionFactory,
-      abi: optionFactoryAbi,
-      functionName: "createOptionSeries",
-      args: [
-        {
+    const label = `Create ${gpu} ${kind} ${formatPrice(strikeN)} · ${daysN}D${viaVault ? " (LP vault)" : ""}`;
+    const params = {
           underlying: stringToBytes32(gpu),
           region: stringToBytes32(region),
           optionType: kind === "CALL" ? 0 : 1,
@@ -290,13 +296,21 @@ function CreateSeriesPanel({ enabled }: { enabled: boolean }) {
           maxContracts: BigInt(capacityN),
           oracle: contracts.oracle,
           settlementToken: contracts.usdc,
-        },
-      ],
-    });
+    };
+    if (viaVault) await vaultTx.writeSeries(label, params);
+    else await createTx.execute(label, { address: contracts.optionFactory, abi: optionFactoryAbi, functionName: "createOptionSeries", args: [params] });
   };
+  const createState = viaVault ? vaultTx.state : createTx.state;
 
   return (
     <Panel title="Create option series" tag={<OnchainTag label="OptionFactory" />}>
+      {hasVault && (
+        <div className="mb-4 grid grid-cols-2 gap-1 rounded-lg border border-line bg-bg p-0.5">
+          {([["WALLET", "Write from my wallet"], ["VAULT", "Write from LP vault"]] as const).map(([w, l]) => (
+            <button key={w} onClick={() => setWriter(w)} className={`seg py-2 ${writer === w ? "bg-panel-2 text-fg" : "text-muted"}`}>{l}</button>
+          ))}
+        </div>
+      )}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
         <Field label="GPU">
           <select className="input py-2" value={gpu} onChange={(e) => setGpu(e.target.value as GpuSymbol)}>
@@ -333,18 +347,20 @@ function CreateSeriesPanel({ enabled }: { enabled: boolean }) {
         <div><div className="label text-[10px]">Collateral required</div><div className="num font-semibold text-primary">{formatUsd(collateral, 0)}</div></div>
       </div>
       <p className="mt-2 text-xs text-muted">
-        Fully collateralized: cap × size × capacity is transferred from your wallet into the new series and locked until exercise or
-        expiry. Your USDC: <span className="num text-fg">{formatUsd(usdc.balance, 0)}</span>
+        Fully collateralized: cap × size × capacity is transferred from {viaVault ? "the LP vault" : "your wallet"} into the new series and
+        locked until exercise or expiry. {viaVault ? "Vault idle liquidity" : "Your USDC"}:{" "}
+        <span className="num text-fg">{formatUsd(viaVault ? vault.idle : usdc.balance, 0)}</span>
+        {viaVault && " · premiums accrue to LPs"}
       </p>
       {errors.length > 0 && <p className="mt-2 text-xs text-neg">{errors[0]}</p>}
 
       <div className="mt-4 flex flex-wrap gap-2">
         {insufficient ? (
-          <span className="text-sm text-neg">Insufficient USDC for collateral. Mint USDC below (owner) or reduce capacity.</span>
+          <span className="text-sm text-neg">{viaVault ? "Not enough idle vault liquidity. Reduce capacity or deposit more." : "Insufficient USDC for collateral. Mint USDC below (owner) or reduce capacity."}</span>
         ) : needsApproval ? (
           <button
             className="btn-primary"
-            disabled={!enabled || busy || errors.length > 0}
+            disabled={!canCreate || busy || errors.length > 0}
             onClick={() => {
               setLast("approve");
               approveTx.approve(contracts.optionFactory, collateralRaw);
@@ -353,16 +369,16 @@ function CreateSeriesPanel({ enabled }: { enabled: boolean }) {
             {busy && <Spinner />} APPROVE {formatUsd(collateral, 0)} COLLATERAL
           </button>
         ) : (
-          <button className="btn-primary" disabled={!enabled || busy || errors.length > 0} onClick={create}>
+          <button className="btn-primary" disabled={!canCreate || busy || errors.length > 0} onClick={create}>
             {busy && <Spinner />} CREATE SERIES
           </button>
         )}
       </div>
-      {(last === "create" ? createTx.state : approveTx.state).phase !== "idle" && (
+      {(last === "create" ? createState : approveTx.state).phase !== "idle" && (
         <div className="mt-4">
           <TransactionStatus
-            state={last === "create" ? createTx.state : approveTx.state}
-            onDismiss={() => (last === "create" ? createTx.reset() : approveTx.reset())}
+            state={last === "create" ? createState : approveTx.state}
+            onDismiss={() => (last === "create" ? (createTx.reset(), vaultTx.reset()) : approveTx.reset())}
             successNote={last === "create" ? <Link to="/markets" className="font-semibold text-primary hover:underline">Series is live — view markets →</Link> : <span className="text-muted">Collateral approved. Create the series.</span>}
           />
         </div>
@@ -516,6 +532,68 @@ function ActivityPanel() {
             </table>
           </div>
         )}
+      </Panel>
+    </div>
+  );
+}
+
+function FuturesAdminPanel({ enabled }: { enabled: boolean }) {
+  const { prices } = useOracle();
+  const { markets } = useFuturesMarkets();
+  const usdc = useUSDC(contracts.futures);
+  const approveTx = useUSDCActions();
+  const tx = useFuturesActions();
+  const [last, setLast] = useState<"approve" | "create">("create");
+  const [gpu, setGpu] = useState<GpuSymbol>("H100");
+  const [forward, setForward] = useState("");
+  const [band, setBand] = useState("");
+  const [days, setDays] = useState("30");
+  const [capacity, setCapacity] = useState("500");
+  const spot = prices?.[gpu]?.price ?? 0;
+  const forwardN = forward === "" ? Math.round(spot * 1.02 * 100) / 100 : Number(forward);
+  const bandN = band === "" ? Math.round(spot * 0.5 * 100) / 100 : Number(band);
+  const capacityN = Math.floor(Number(capacity));
+  const collateral = bandN * 100 * capacityN;
+  const collateralRaw = toUsdc(bandN) * 100n * BigInt(capacityN > 0 ? capacityN : 0);
+  const valid = forwardN > 0 && bandN > 0 && bandN <= forwardN && Number(days) > 0 && capacityN > 0;
+  const busy = approveTx.isBusy || tx.isBusy;
+  const state = last === "create" ? tx.state : approveTx.state;
+
+  return (
+    <div className="mt-6">
+      <Panel title={`GPU futures markets (${markets.length})`} tag={<OnchainTag label="ComputeFutures" />}>
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">
+          <Field label="GPU">
+            <select className="input py-2" value={gpu} onChange={(e) => setGpu(e.target.value as GpuSymbol)}>
+              {GPU_SYMBOLS.map((g) => <option key={g}>{g}</option>)}
+            </select>
+          </Field>
+          <Field label="Forward $/GPU-h"><input className="input py-2" inputMode="decimal" placeholder={forwardN.toFixed(2)} value={forward} onChange={(e) => setForward(e.target.value)} /></Field>
+          <Field label="Band ± $/GPU-h"><input className="input py-2" inputMode="decimal" placeholder={bandN.toFixed(2)} value={band} onChange={(e) => setBand(e.target.value)} /></Field>
+          <Field label="Expiry (days)"><input className="input py-2" inputMode="numeric" value={days} onChange={(e) => setDays(e.target.value)} /></Field>
+          <Field label="Capacity (contracts)"><input className="input py-2" inputMode="numeric" value={capacity} onChange={(e) => setCapacity(e.target.value)} /></Field>
+        </div>
+        <p className="mt-3 text-xs text-muted">
+          100 GPU-hours per contract. You take the other side of every position and post band × 100 × capacity ={" "}
+          <span className="num font-semibold text-primary">{formatUsd(collateral, 0)}</span> collateral. Spot {formatPrice(spot)}.
+        </p>
+        <div className="mt-3 flex flex-wrap gap-2">
+          {usdc.allowanceRaw < collateralRaw ? (
+            <button className="btn-primary" disabled={!enabled || busy || !valid} onClick={() => { setLast("approve"); approveTx.approve(contracts.futures, collateralRaw); }}>
+              {busy && <Spinner />} APPROVE {formatUsd(collateral, 0)}
+            </button>
+          ) : (
+            <button
+              className="btn-primary"
+              disabled={!enabled || busy || !valid}
+              onClick={() => { setLast("create"); tx.createMarket({ gpu, region: "US-East", forward: forwardN, band: bandN, days: Number(days), contractSize: 100, capacity: capacityN }); }}
+            >
+              {busy && <Spinner />} CREATE FUTURES MARKET
+            </button>
+          )}
+          <Link to="/futures" className="btn-ghost">View futures →</Link>
+        </div>
+        {state.phase !== "idle" && <div className="mt-3"><TransactionStatus state={state} onDismiss={() => (last === "create" ? tx.reset() : approveTx.reset())} compact /></div>}
       </Panel>
     </div>
   );

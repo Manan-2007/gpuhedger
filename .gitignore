@@ -13,11 +13,14 @@ frontend/dist/
 contracts/out/
 contracts/cache/
 contracts/broadcast/*/31337/
+contracts/broadcast/*/31338/
 contracts/broadcast/**/dry-run/
 
 # Local-only deployments (Anvil)
 contracts/deployments/31337.json
 frontend/src/contracts/deployments/31337.json
+contracts/deployments/31338.json
+frontend/src/contracts/deployments/31338.json
 
 # OS / editors
 .DS_Store

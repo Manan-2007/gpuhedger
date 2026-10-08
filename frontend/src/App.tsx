@@ -12,6 +12,10 @@ import { PortfolioPage } from "./pages/PortfolioPage";
 import { AdminPage } from "./pages/AdminPage";
 import { DocsPage } from "./pages/DocsPage";
 import { NotFoundPage } from "./pages/NotFoundPage";
+import { HedgePage } from "./pages/HedgePage";
+import { FuturesPage } from "./pages/FuturesPage";
+import { VaultPage } from "./pages/VaultPage";
+import { ActivityPage } from "./pages/ActivityPage";
 
 function ScrollToTop() {
   const { pathname } = useLocation();
@@ -43,6 +47,10 @@ export function App() {
           <Route path="/markets" element={<MarketsPage />} />
           <Route path="/markets/:id" element={<MarketDetailPage />} />
           <Route path="/trade" element={<TradePage />} />
+          <Route path="/hedge" element={<HedgePage />} />
+          <Route path="/futures" element={<FuturesPage />} />
+          <Route path="/vault" element={<VaultPage />} />
+          <Route path="/activity" element={<ActivityPage />} />
           <Route path="/portfolio" element={<PortfolioPage />} />
           <Route path="/admin" element={<AdminPage />} />
           <Route path="/docs" element={<DocsPage />} />

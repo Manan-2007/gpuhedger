@@ -16,7 +16,8 @@ export function TradePage() {
   const prices = useAllGpuPrices();
   const priceMap = useMemo(() => Object.fromEntries(prices.map((p) => [p.gpu, p.price])) as Record<GpuSymbol, number>, [prices]);
   const live = useMemo(() => all.filter((s) => isActive(s)), [all]);
-  const [contracts, setContracts] = useState(10);
+  const paramQty = Number(params.get("qty"));
+  const [contracts, setContracts] = useState(Number.isInteger(paramQty) && paramQty > 0 ? paramQty : 10);
 
   const paramSeries = params.get("series");
   const paramGpu = params.get("gpu");

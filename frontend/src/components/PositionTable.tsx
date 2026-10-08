@@ -1,4 +1,5 @@
 import { Fragment, useState } from "react";
+import { isAddress, type Address } from "viem";
 import { Link } from "react-router-dom";
 import type { PositionView } from "../types/options";
 import type { useOptionActions } from "../hooks/useOption";
@@ -10,6 +11,7 @@ const STATUS_STYLE = {
   OPEN: "border-secondary/30 text-secondary",
   EXERCISED: "border-pos/30 text-pos",
   EXPIRED: "border-line-2 text-dim",
+  CLAIMABLE: "border-primary/40 text-primary",
 } as const;
 
 export type OptionActions = ReturnType<typeof useOptionActions>;
@@ -20,19 +22,39 @@ export function PositionTable({
   actions,
   activeKey,
   onExercise,
+  onClaim,
+  onTransfer,
 }: {
   positions: PositionView[];
   actions: OptionActions;
   activeKey?: string;
   onExercise: (p: PositionView) => void;
+  onClaim: (p: PositionView) => void;
+  onTransfer: (p: PositionView, to: Address) => void;
 }) {
   const wrongNetwork = useWrongNetwork();
   const [expanded, setExpanded] = useState<string>();
   const exercise = onExercise;
 
   const exerciseButton = (p: PositionView, className = "") => {
-    if (p.status !== "OPEN") return <span className="text-xs text-dim">—</span>;
     const busy = actions.isBusy && activeKey === p.key;
+    if (p.status === "CLAIMABLE") {
+      return (
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            onClaim(p);
+          }}
+          disabled={actions.isBusy || wrongNetwork || p.claimValue <= 0}
+          title={`Claim ${formatUsd(p.claimValue)} at the expiry settlement price`}
+          className={`btn-primary whitespace-nowrap px-3 py-1.5 text-xs ${className}`}
+        >
+          {busy && <Spinner className="h-3 w-3" />}
+          CLAIM
+        </button>
+      );
+    }
+    if (p.status !== "OPEN") return <span className="text-xs text-dim">—</span>;
     return (
       <button
         onClick={(e) => {
@@ -92,6 +114,7 @@ export function PositionTable({
                     <tr className="border-b border-line/70 bg-bg/40">
                       <td colSpan={10} className="px-4 py-4">
                         <PositionDetail p={p} />
+                <TransferForm p={p} disabled={actions.isBusy || wrongNetwork} onTransfer={onTransfer} />
                       </td>
                     </tr>
                   )}
@@ -130,6 +153,7 @@ export function PositionTable({
               </div>
               <div className="mt-3 border-t border-line pt-3">
                 <PositionDetail p={p} />
+                <TransferForm p={p} disabled={actions.isBusy || wrongNetwork} onTransfer={onTransfer} />
               </div>
             </div>
           );
@@ -152,6 +176,23 @@ function Cell({ k, v }: { k: string; v: string }) {
   );
 }
 
+function TransferForm({ p, disabled, onTransfer }: { p: PositionView; disabled: boolean; onTransfer: (p: PositionView, to: Address) => void }) {
+  const [to, setTo] = useState("");
+  if (p.status !== "OPEN" && p.status !== "CLAIMABLE") return null;
+  const valid = isAddress(to);
+  return (
+    <div className="mt-3 flex flex-col gap-2 border-t border-line pt-3 sm:flex-row sm:items-center" onClick={(e) => e.stopPropagation()}>
+      <span className="shrink-0 text-xs text-muted">
+        Position NFT <span className="num text-fg">#{p.tokenId.toString()}</span> · transfer hedge to
+      </span>
+      <input className="input py-1.5 text-xs" placeholder="0x… recipient address" value={to} onChange={(e) => setTo(e.target.value.trim())} aria-label="Recipient address" />
+      <button className="btn-secondary shrink-0 px-3 py-1.5 text-xs" disabled={disabled || !valid} onClick={() => onTransfer(p, to as Address)}>
+        TRANSFER
+      </button>
+    </div>
+  );
+}
+
 function PositionDetail({ p }: { p: PositionView }) {
   const items: [string, string, string?][] = [
     [`${p.series.gpu} oracle price`, `${formatPrice(p.spot)}/h`],
@@ -159,9 +200,9 @@ function PositionDetail({ p }: { p: PositionView }) {
     ["Exercise value now", formatUsd(p.exerciseValue), p.exerciseValue > 0 ? "text-pos" : ""],
     ["Est. option value", p.status === "OPEN" ? formatUsd(p.estimatedValue) : "—"],
     ["Distance to strike", formatPct(p.distanceToStrike)],
-    ["Time remaining", p.status === "OPEN" ? formatDuration(p.timeRemaining) : p.status === "EXERCISED" ? `Exercised ${formatDate(p.closedAt)}` : "Expired"],
+    ["Time remaining", p.status === "OPEN" ? formatDuration(p.timeRemaining) : p.status === "EXERCISED" ? `Settled ${formatDate(p.closedAt)}` : p.status === "CLAIMABLE" ? "Expired ITM — claim" : "Expired"],
     ["GPU-hours covered", formatNumber(p.contracts * p.series.contractSize)],
-    ["Payout received", p.status === "EXERCISED" ? formatUsd(p.payout) : "—", p.status === "EXERCISED" ? "text-pos" : ""],
+    [p.status === "CLAIMABLE" ? "Claimable payout" : "Payout received", p.status === "EXERCISED" ? formatUsd(p.payout) : p.status === "CLAIMABLE" ? formatUsd(p.claimValue) : "—", p.status === "EXERCISED" || p.status === "CLAIMABLE" ? "text-pos" : ""],
   ];
   return (
     <div>

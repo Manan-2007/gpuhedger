@@ -14,6 +14,10 @@ const TOC = [
   ["architecture", "Architecture"],
   ["contracts", "Smart contracts"],
   ["settlement", "Settlement & collateral"],
+  ["nfts", "Transferable positions"],
+  ["vault", "LP vault"],
+  ["futures", "GPU futures"],
+  ["oracle", "Oracle updates"],
   ["pricing", "Pricing model"],
   ["playground", "Payoff playground"],
   ["security", "Security"],
@@ -74,7 +78,10 @@ export function DocsPage() {
               ["OptionFactory", addresses.optionFactory, "Creates series (createOptionSeries), indexes positions, records protocol activity, pause switch."],
               ["ComputeOracle", addresses.oracle, "Admin-controlled GPU prices + implied vol (setPrice / getPrice / getPriceWithTimestamp)."],
               ["MockUSDC", addresses.usdc, "6-decimal TESTNET ONLY settlement token with a public faucet."],
-              ["ComputeOption", undefined, "One per series: buyOption, exercise, expire, getPosition, getOptionDetails, isInTheMoney, calculateExerciseValue."],
+              ["ComputeOption", undefined, "One per series: buyOption, exercise, expire, claim, getPosition, getOptionDetails, isInTheMoney, calculateExerciseValue."],
+              ["PositionNFT", addresses.positionNFT, "ERC-721 for every position, with onchain SVG metadata. The holder owns the hedge."],
+              ["ComputeVault", addresses.vault, "ERC-4626 LP vault that writes option series with pooled USDC and earns premiums."],
+              ["ComputeFutures", addresses.futures, "Fully margined GPU forwards: LONG locks cost, SHORT locks revenue."],
             ].map(([name, addr, desc]) => (
               <div key={name} className="flex flex-col gap-1 p-4 sm:flex-row sm:items-start sm:justify-between">
                 <div>
@@ -109,8 +116,51 @@ export function DocsPage() {
           </p>
           <p>
             Because payouts are capped, a call behaves like a call spread: potential profit is large but finite, and always funded.
-            Exercise is allowed any time before expiry while in the money. Unexercised positions expire worthless; anyone can then call{" "}
-            <code className="num">expire()</code> to release the writer's collateral.
+            Exercise is allowed any time before expiry while in the money. At expiry the series settles at the oracle price in effect at
+            the expiration timestamp (<code className="num">getPriceAt</code>, a binary search over the oracle's onchain price history), so
+            later price updates can't change the result. <code className="num">expire()</code> reserves what in-the-money holders are owed
+            and releases the rest to the writer; holders then call <code className="num">claim()</code>. Nothing expires worthless just
+            because the holder was offline.
+          </p>
+        </Doc>
+
+        <Doc id="nfts" title="Transferable positions">
+          <p>
+            Every purchase mints an ERC-721 from <code className="num">PositionNFT</code> with fully onchain metadata (an SVG card showing
+            GPU, type, strike and size). Whoever holds the token owns the position: they can exercise or claim it. A startup can move a
+            hedge to a treasury wallet or sell it, the first step toward secondary trading.
+          </p>
+        </Doc>
+
+        <Doc id="vault" title="LP vault">
+          <p>
+            <code className="num">ComputeVault</code> is an ERC-4626 vault. LPs deposit USDC for <code className="num">ghLP</code> shares,
+            and the manager uses pooled liquidity to write fully collateralized option series. Premiums flow to the vault, so share value
+            rises as AI companies buy protection.
+          </p>
+          <Formula>NAV = idle USDC + Σ live series (collateral held − in-the-money value of open contracts at the oracle price)</Formula>
+          <p className="text-sm text-muted">
+            Withdrawals are limited to idle USDC, so collateral backing open options can't leave. <code className="num">harvest()</code>{" "}
+            (callable by anyone) settles expired series and returns collateral. LPs are option writers: large GPU price moves reduce NAV.
+          </p>
+        </Doc>
+
+        <Doc id="futures" title="GPU futures">
+          <p>
+            <code className="num">ComputeFutures</code> lists fixed-price forwards. <b>LONG</b> locks a compute cost (AI startups);{" "}
+            <b>SHORT</b> locks rental revenue (GPU providers). The market maker takes the other side. There's no premium. Both sides post
+            margin of band × GPU-hours, so every position is fully funded.
+          </p>
+          <Formula>long P&L per GPU-hour = clamp(S − F, −B, +B) · short P&L = −clamp(S − F, −B, +B)</Formula>
+          <p className="text-sm text-muted">S is the oracle price at expiry, F the forward price, B the band. Anyone can settle a position after expiry.</p>
+        </Doc>
+
+        <Doc id="oracle" title="Oracle updates from real rental prices">
+          <p>
+            <code className="num">scripts/oracle-keeper.mjs</code> samples live on-demand offers from a public GPU rental marketplace
+            (Vast.ai), takes a trimmed median $/GPU-hour per GPU, and pushes it onchain via <code className="num">setPrices</code>. Moves are
+            limited per update, and updates are skipped when the price barely changes. It's still a single permissioned reporter, but it
+            feeds the oracle real market data instead of hand-set numbers. Next step: multiple independent reporters with medianization.
           </p>
         </Doc>
 
@@ -148,16 +198,17 @@ export function DocsPage() {
             <li>Validation: non-zero strike, future expiry (≤ 2 years), contract size bounds, premium &lt; cap, put cap ≤ strike, allowlisted oracle & settlement token, oracle-supported underlying.</li>
             <li>Double exercise, exercise after expiry, out-of-the-money exercise, and non-owner exercise all revert.</li>
             <li>Locked collateral is never withdrawable; clones cannot be re-initialized; only registered series can record activity.</li>
-            <li>30 Foundry tests including a fuzz test that payouts never exceed collateral.</li>
+            <li>Positions are ERC-721 tokens minted only via registered series; the vault limits withdrawals to idle liquidity.</li>
+            <li>42 Foundry tests including a fuzz test that payouts never exceed collateral.</li>
           </ul>
         </Doc>
 
         <Doc id="risks" title="Risks & limitations">
           <p className="rounded-lg border border-line bg-panel p-4 text-sm">{RISK_TEXT}</p>
           <ul className="list-disc space-y-1.5 pl-5 text-muted">
-            <li>The oracle is a permissioned demo feed controlled by the admin — not a real GPU price index.</li>
+            <li>The oracle is permissioned: a single reporter (admin or the keeper script fed by marketplace prices), not a decentralized index.</li>
             <li>24h/7d change, rental volume, historical charts and bids are simulated and labelled as such.</li>
-            <li>Single writer per series, fixed premium, no secondary market yet.</li>
+            <li>One writer per series, fixed premium. Positions are transferable but there is no order book yet.</li>
             <li>Test USDC has no value. Unaudited hackathon code — do not use with real funds.</li>
           </ul>
         </Doc>

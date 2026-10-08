@@ -7,6 +7,9 @@ interface ImportMetaEnv {
   readonly VITE_USDC_ADDRESS?: string;
   readonly VITE_ORACLE_ADDRESS?: string;
   readonly VITE_OPTION_FACTORY_ADDRESS?: string;
+  readonly VITE_POSITION_NFT_ADDRESS?: string;
+  readonly VITE_VAULT_ADDRESS?: string;
+  readonly VITE_FUTURES_ADDRESS?: string;
   readonly VITE_E2E_MOCK_WALLET?: string;
 }
 

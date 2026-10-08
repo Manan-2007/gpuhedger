@@ -7,12 +7,14 @@ import {MockUSDC} from "../src/MockUSDC.sol";
 import {ComputeOracle} from "../src/ComputeOracle.sol";
 import {ComputeOption} from "../src/ComputeOption.sol";
 import {OptionFactory} from "../src/OptionFactory.sol";
+import {PositionNFT} from "../src/PositionNFT.sol";
 import {GpuHedgerTypes} from "../src/interfaces/IGpuHedger.sol";
 
 contract GpuHedgerTest is Test {
     MockUSDC usdc;
     ComputeOracle oracle;
     OptionFactory factory;
+    PositionNFT nft;
 
     address admin = makeAddr("admin");
     address alice = makeAddr("alice");
@@ -34,7 +36,11 @@ contract GpuHedgerTest is Test {
         oracle.addAsset(H100, 2_000_000, 4_200); // $2.00, 42% vol
         oracle.addAsset(A100, 1_300_000, 3_500); // $1.30
         oracle.addAsset(B200, 3_800_000, 5_500); // $3.80
-        factory = new OptionFactory(admin, address(new ComputeOption()), address(oracle), address(usdc));
+        nft = new PositionNFT(admin);
+        factory = new OptionFactory(
+            admin, address(new ComputeOption()), address(nft), address(oracle), address(usdc)
+        );
+        nft.grantRole(nft.MINTER_ROLE(), address(factory));
         usdc.mint(admin, 10_000_000 * USDC);
         usdc.approve(address(factory), type(uint256).max);
         vm.stopPrank();
@@ -366,7 +372,8 @@ contract GpuHedgerTest is Test {
         uint256 id = _buy(opt, alice, 1);
         _setH100(4_000_000);
         vm.warp(opt.expiration());
-        assertEq(uint8(opt.getPosition(id).status), uint8(GpuHedgerTypes.PositionStatus.Expired));
+        // In the money at expiry: no longer exercisable, but claimable after settlement
+        assertEq(uint8(opt.getPosition(id).status), uint8(GpuHedgerTypes.PositionStatus.Claimable));
         vm.prank(alice);
         vm.expectRevert(ComputeOption.OptionExpired.selector);
         opt.exercise(id);
@@ -561,7 +568,7 @@ contract GpuHedgerTest is Test {
         uint256 a2 = _buy(call, alice, 3);
 
         assertEq(call.positionCount(), 3);
-        assertEq(call.getUserPositionIds(alice).length, 2);
+        assertEq(nft.balanceOf(alice), 2);
         assertEq(factory.getUserPositions(bob).length, 2);
         assertEq(factory.getUserPositions(alice).length, 2);
         assertEq(factory.uniqueTraders(), 2);

@@ -58,8 +58,9 @@ const cost = call.premium * call.contractSize * contracts;
 await send(buyer, `Approve ${usd(cost)} USDC`, deployment.usdc, usdcAbi, "approve", [call.option, cost]);
 await send(buyer, `Buy ${contracts} H100 CALL @ $2.20`, call.option, optionAbi, "buyOption", [contracts, cost]);
 
-const positions = await read(call.option, optionAbi, "getUserPositions", [buyer.account.address]);
-const pos = positions[positions.length - 1];
+const owned = (await read(deployment.optionFactory, factoryAbi, "getUserPositions", [buyer.account.address])).filter((p) => p.option.toLowerCase() === call.option.toLowerCase());
+const pos = owned[owned.length - 1].position;
+console.log(`  position NFT #${owned[owned.length - 1].tokenId} minted to buyer`);
 console.log(`  position #${pos.id}: ${pos.contracts} contracts, premium ${usd(pos.premiumPaid)}`);
 
 let otmRejected = false;

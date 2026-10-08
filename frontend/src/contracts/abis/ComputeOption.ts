@@ -63,6 +63,25 @@ export const computeOptionAbi = [
   },
   {
     "type": "function",
+    "name": "claim",
+    "inputs": [
+      {
+        "name": "positionId",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "payout",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
     "name": "collateralBalance",
     "inputs": [],
     "outputs": [
@@ -164,6 +183,19 @@ export const computeOptionAbi = [
     "inputs": [],
     "outputs": [],
     "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "expiryPayoutPerContract",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "stateMutability": "view"
   },
   {
     "type": "function",
@@ -341,86 +373,6 @@ export const computeOptionAbi = [
         "name": "pos",
         "type": "tuple",
         "internalType": "struct GpuHedgerTypes.Position",
-        "components": [
-          {
-            "name": "id",
-            "type": "uint256",
-            "internalType": "uint256"
-          },
-          {
-            "name": "owner",
-            "type": "address",
-            "internalType": "address"
-          },
-          {
-            "name": "contracts",
-            "type": "uint256",
-            "internalType": "uint256"
-          },
-          {
-            "name": "premiumPaid",
-            "type": "uint256",
-            "internalType": "uint256"
-          },
-          {
-            "name": "openedAt",
-            "type": "uint256",
-            "internalType": "uint256"
-          },
-          {
-            "name": "status",
-            "type": "uint8",
-            "internalType": "enum GpuHedgerTypes.PositionStatus"
-          },
-          {
-            "name": "payout",
-            "type": "uint256",
-            "internalType": "uint256"
-          },
-          {
-            "name": "closedAt",
-            "type": "uint256",
-            "internalType": "uint256"
-          }
-        ]
-      }
-    ],
-    "stateMutability": "view"
-  },
-  {
-    "type": "function",
-    "name": "getUserPositionIds",
-    "inputs": [
-      {
-        "name": "user",
-        "type": "address",
-        "internalType": "address"
-      }
-    ],
-    "outputs": [
-      {
-        "name": "",
-        "type": "uint256[]",
-        "internalType": "uint256[]"
-      }
-    ],
-    "stateMutability": "view"
-  },
-  {
-    "type": "function",
-    "name": "getUserPositions",
-    "inputs": [
-      {
-        "name": "user",
-        "type": "address",
-        "internalType": "address"
-      }
-    ],
-    "outputs": [
-      {
-        "name": "list",
-        "type": "tuple[]",
-        "internalType": "struct GpuHedgerTypes.Position[]",
         "components": [
           {
             "name": "id",
@@ -666,6 +618,25 @@ export const computeOptionAbi = [
   },
   {
     "type": "function",
+    "name": "positionTokenId",
+    "inputs": [
+      {
+        "name": "",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
     "name": "premium",
     "inputs": [],
     "outputs": [
@@ -757,6 +728,32 @@ export const computeOptionAbi = [
         "name": "",
         "type": "bool",
         "internalType": "bool"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "settlementPayoutPerContract",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "settlementPrice",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256",
+        "internalType": "uint256"
       }
     ],
     "stateMutability": "view"
@@ -899,6 +896,37 @@ export const computeOptionAbi = [
   },
   {
     "type": "event",
+    "name": "OptionClaimed",
+    "inputs": [
+      {
+        "name": "positionId",
+        "type": "uint256",
+        "indexed": true,
+        "internalType": "uint256"
+      },
+      {
+        "name": "holder",
+        "type": "address",
+        "indexed": true,
+        "internalType": "address"
+      },
+      {
+        "name": "contracts",
+        "type": "uint256",
+        "indexed": false,
+        "internalType": "uint256"
+      },
+      {
+        "name": "payout",
+        "type": "uint256",
+        "indexed": false,
+        "internalType": "uint256"
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
     "name": "OptionExercised",
     "inputs": [
       {
@@ -951,6 +979,12 @@ export const computeOptionAbi = [
         "internalType": "address"
       },
       {
+        "name": "tokenId",
+        "type": "uint256",
+        "indexed": false,
+        "internalType": "uint256"
+      },
+      {
         "name": "contracts",
         "type": "uint256",
         "indexed": false,
@@ -967,16 +1001,22 @@ export const computeOptionAbi = [
   },
   {
     "type": "event",
-    "name": "SeriesExpired",
+    "name": "SeriesSettled",
     "inputs": [
       {
-        "name": "releasedCollateral",
+        "name": "settlementPrice",
         "type": "uint256",
         "indexed": false,
         "internalType": "uint256"
       },
       {
-        "name": "expiredContracts",
+        "name": "reservedForHolders",
+        "type": "uint256",
+        "indexed": false,
+        "internalType": "uint256"
+      },
+      {
+        "name": "releasedToWriter",
         "type": "uint256",
         "indexed": false,
         "internalType": "uint256"
@@ -1023,11 +1063,6 @@ export const computeOptionAbi = [
   {
     "type": "error",
     "name": "NothingToWithdraw",
-    "inputs": []
-  },
-  {
-    "type": "error",
-    "name": "OnlyFactory",
     "inputs": []
   },
   {

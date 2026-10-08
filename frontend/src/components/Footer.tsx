@@ -34,6 +34,9 @@ export function Footer() {
               ["OptionFactory", addresses.optionFactory],
               ["ComputeOracle", addresses.oracle],
               ["MockUSDC", addresses.usdc],
+              ["PositionNFT", addresses.positionNFT],
+              ["ComputeVault", addresses.vault],
+              ["ComputeFutures", addresses.futures],
             ].map(([name, addr]) => (
               <li key={name} className="flex justify-between gap-3">
                 <span className="text-muted">{name}</span>

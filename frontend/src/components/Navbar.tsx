@@ -8,7 +8,11 @@ import { Logo } from "./ui";
 const LINKS = [
   { to: "/markets", label: "Markets" },
   { to: "/trade", label: "Trade" },
+  { to: "/hedge", label: "Hedge" },
+  { to: "/futures", label: "Futures" },
+  { to: "/vault", label: "Vault" },
   { to: "/portfolio", label: "Portfolio" },
+  { to: "/activity", label: "Activity" },
   { to: "/admin", label: "Admin" },
   { to: "/docs", label: "Docs" },
 ];
@@ -34,13 +38,13 @@ export function Navbar() {
       <header className="sticky top-0 z-40 border-b border-line bg-bg/85 backdrop-blur-md">
         <div className="mx-auto flex h-16 max-w-7xl items-center gap-4 px-4 sm:px-6">
           <Logo />
-          <nav className="ml-6 hidden items-center gap-1 lg:flex">
+          <nav className="ml-4 hidden items-center gap-0.5 xl:flex">
             {LINKS.map((l) => (
               <NavLink
                 key={l.to}
                 to={l.to}
                 className={({ isActive }) =>
-                  `rounded-md px-3 py-2 text-sm font-medium transition-colors ${isActive ? "bg-panel-2 text-fg" : "text-muted hover:text-fg"}`
+                  `rounded-md px-2.5 py-2 text-sm font-medium transition-colors ${isActive ? "bg-panel-2 text-fg" : "text-muted hover:text-fg"}`
                 }
               >
                 {l.label}
@@ -51,13 +55,13 @@ export function Navbar() {
             <div className="hidden sm:block">
               <DemoModeBadge />
             </div>
-            <span className="hidden items-center gap-1.5 text-xs text-muted xl:flex">
+            <span className="hidden items-center gap-1.5 text-xs text-muted 2xl:flex">
               <span className={`h-1.5 w-1.5 rounded-full ${isLocalChain ? "bg-warn" : "bg-secondary"}`} />
               {activeChain.name}
             </span>
             <WalletButton />
             <button
-              className="grid h-9 w-9 place-items-center rounded-md border border-line-2 lg:hidden"
+              className="grid h-9 w-9 place-items-center rounded-md border border-line-2 xl:hidden"
               onClick={() => setOpen((o) => !o)}
               aria-label="Toggle menu"
               aria-expanded={open}
@@ -69,11 +73,11 @@ export function Navbar() {
           </div>
         </div>
         {open && (
-          <nav className="border-t border-line px-4 py-3 lg:hidden">
+          <nav className="border-t border-line px-4 py-3 xl:hidden">
             <div className="mb-3 sm:hidden">
               <DemoModeBadge />
             </div>
-            <div className="grid grid-cols-2 gap-1">
+            <div className="grid grid-cols-2 gap-1 sm:grid-cols-3">
               {LINKS.map((l) => (
                 <NavLink
                   key={l.to}

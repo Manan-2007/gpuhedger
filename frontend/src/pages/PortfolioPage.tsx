@@ -4,6 +4,8 @@ import { useAccount } from "wagmi";
 import { usePortfolio } from "../hooks/usePortfolio";
 import { useOptionActions } from "../hooks/useOption";
 import type { PositionView } from "../types/options";
+import type { Address } from "viem";
+import { FuturesPositions } from "../components/FuturesPositions";
 import { useMonBalance, useUSDC, useUSDCActions } from "../hooks/useUSDC";
 import { useAllGpuPrices } from "../hooks/useOracle";
 import { activeChain, MONAD_FAUCET_URL, isLocalChain } from "../lib/chain";
@@ -50,7 +52,9 @@ function Portfolio() {
   const [tab, setTab] = useState<Tab>("OPEN");
   const actions = useOptionActions();
   const [activeKey, setActiveKey] = useState<string>();
-  const [settled, setSettled] = useState<{ payout: number; label: string }>();
+  const [settled, setSettled] = useState<{ payout: number; label: string; note: string }>();
+
+  const label = (p: PositionView) => `${p.series.gpu} ${p.series.kind} ${formatPrice(p.series.strike)}`;
 
   const onExercise = async (p: PositionView) => {
     setActiveKey(p.key);
@@ -58,12 +62,35 @@ function Portfolio() {
     const expected = p.exerciseValue;
     const receipt = await actions.exercise(p.series, p.positionId);
     if (receipt) {
-      setSettled({ payout: expected, label: `${p.series.gpu} ${p.series.kind} ${formatPrice(p.series.strike)}` });
+      setSettled({ payout: expected, label: label(p), note: "exercised" });
       setTab("EXERCISED");
     }
   };
 
-  const shown = tab === "ALL" ? positions : positions.filter((p) => p.status === tab);
+  const onClaim = async (p: PositionView) => {
+    setActiveKey(p.key);
+    setSettled(undefined);
+    const expected = p.claimValue;
+    const receipt = await actions.claim(p.series, p.positionId);
+    if (receipt) {
+      setSettled({ payout: expected, label: label(p), note: "claimed at the expiry settlement price" });
+      setTab("EXERCISED");
+    }
+  };
+
+  const onTransfer = async (p: PositionView, to: Address) => {
+    if (!address) return;
+    setActiveKey(p.key);
+    setSettled(undefined);
+    await actions.transfer(address, to, p.tokenId);
+  };
+
+  const shown =
+    tab === "ALL"
+      ? positions
+      : tab === "OPEN"
+        ? positions.filter((p) => p.status === "OPEN" || p.status === "CLAIMABLE")
+        : positions.filter((p) => p.status === tab);
   const counts: Record<Tab, number> = {
     OPEN: summary.open.length,
     EXERCISED: summary.exercised.length,
@@ -130,10 +157,14 @@ function Portfolio() {
               setActiveKey(undefined);
             }}
             successNote={
-              <span className="text-muted">
-                {settled?.label} exercised · payout{" "}
-                <span className="num font-semibold text-pos">{formatUsd(settled?.payout ?? 0)}</span> settled in USDC directly to your wallet.
-              </span>
+              settled ? (
+                <span className="text-muted">
+                  {settled.label} {settled.note} · payout{" "}
+                  <span className="num font-semibold text-pos">{formatUsd(settled.payout)}</span> settled in USDC directly to your wallet.
+                </span>
+              ) : (
+                <span className="text-muted">Position NFT transferred. The recipient now owns the hedge.</span>
+              )
             }
           />
         </div>
@@ -159,9 +190,11 @@ function Portfolio() {
             action={positions.length === 0 ? <Link to="/trade" className="btn-primary">TRADE COMPUTE</Link> : undefined}
           />
         ) : (
-          <PositionTable positions={shown} actions={actions} activeKey={activeKey} onExercise={onExercise} />
+          <PositionTable positions={shown} actions={actions} activeKey={activeKey} onExercise={onExercise} onClaim={onClaim} onTransfer={onTransfer} />
         )}
       </div>
+
+      <FuturesPositions />
     </div>
   );
 }

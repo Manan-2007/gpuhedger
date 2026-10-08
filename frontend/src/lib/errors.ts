@@ -37,6 +37,22 @@ const REVERT_MESSAGES: Record<string, string> = {
   UnsupportedUnderlying: "The oracle doesn't support this GPU.",
   OracleNotApproved: "This oracle isn't approved by the factory.",
   TokenNotApproved: "This settlement token isn't approved by the factory.",
+  // Futures
+  MarketExpired: "This futures market has expired. New positions can't be opened.",
+  MarketNotExpired: "This futures market hasn't expired yet, so it can't settle.",
+  AlreadyClosed: "This futures position has already been settled.",
+  InvalidMarket: "That futures market doesn't exist.",
+  InvalidParams: "Invalid market parameters. The band must be positive and no larger than the forward price.",
+  // Vault
+  NotVaultSeries: "That series wasn't written by the LP vault.",
+  WrongSettlementToken: "The vault can only write series settled in its own asset (USDC).",
+  TooManyActiveSeries: "The vault has too many active series. Harvest expired ones first.",
+  ERC4626ExceededMaxWithdraw: "That's more than you can withdraw right now. Withdrawals are limited to idle vault liquidity.",
+  ERC4626ExceededMaxRedeem: "That's more than you can redeem right now. Withdrawals are limited to idle vault liquidity.",
+  // Position NFTs
+  ERC721InvalidReceiver: "That address can't receive position NFTs (it's a contract without ERC-721 support).",
+  ERC721InsufficientApproval: "You don't own this position NFT.",
+  ERC721NonexistentToken: "That position NFT doesn't exist.",
   // Faucet
   FaucetOnCooldown: "Faucet cooldown active. Try again a little later.",
   // OpenZeppelin

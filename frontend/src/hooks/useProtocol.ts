@@ -1,15 +1,16 @@
 import { useMemo } from "react";
 import { useAccount, useReadContract } from "wagmi";
 import { keccak256, toBytes, zeroAddress } from "viem";
-import { computeOracleAbi, mockUSDCAbi, optionFactoryAbi } from "../contracts/abis";
-import { contracts, isConfigured } from "../contracts/addresses";
+import { computeFuturesAbi, computeOracleAbi, computeVaultAbi, mockUSDCAbi, optionFactoryAbi } from "../contracts/abis";
+import { contracts, hasFutures, hasVault, isConfigured } from "../contracts/addresses";
 import { fromUsdc } from "../utils/formatters";
 
 const ORACLE_ROLE = keccak256(toBytes("ORACLE_ROLE"));
 const WRITER_ROLE = keccak256(toBytes("WRITER_ROLE"));
 const PAUSER_ROLE = keccak256(toBytes("PAUSER_ROLE"));
+const MANAGER_ROLE = keccak256(toBytes("MANAGER_ROLE"));
 
-export const ACTIVITY_KINDS = ["Series created", "Purchase", "Exercise", "Expiry"] as const;
+export const ACTIVITY_KINDS = ["Series created", "Purchase", "Exercise", "Expiry", "Claim"] as const;
 
 /** Onchain protocol-wide traction metrics, recorded by the OptionFactory. */
 export function useProtocolStats() {
@@ -47,6 +48,8 @@ export function useRecentActivity(limit = 25) {
     () =>
       (query.data ?? []).map((a) => ({
         kind: ACTIVITY_KINDS[a.kind] ?? "Activity",
+        kindIndex: a.kind,
+        amountRaw: a.amount,
         seriesId: Number(a.seriesId),
         account: a.account,
         contracts: Number(a.contracts),
@@ -69,6 +72,8 @@ export function useAdminRoles() {
   const isOracle = useReadContract({ address: contracts.oracle, abi: computeOracleAbi, functionName: "hasRole", args: [ORACLE_ROLE, account], ...opts });
   const isWriter = useReadContract({ address: contracts.optionFactory, abi: optionFactoryAbi, functionName: "hasRole", args: [WRITER_ROLE, account], ...opts });
   const isPauser = useReadContract({ address: contracts.optionFactory, abi: optionFactoryAbi, functionName: "hasRole", args: [PAUSER_ROLE, account], ...opts });
+  const isVaultManager = useReadContract({ address: contracts.vault, abi: computeVaultAbi, functionName: "hasRole", args: [MANAGER_ROLE, account], query: { enabled: enabled && hasVault, refetchInterval: 5_000 } });
+  const isFuturesWriter = useReadContract({ address: contracts.futures, abi: computeFuturesAbi, functionName: "hasRole", args: [WRITER_ROLE, account], query: { enabled: enabled && hasFutures, refetchInterval: 5_000 } });
   const usdcOwner = useReadContract({ address: contracts.usdc, abi: mockUSDCAbi, functionName: "owner", query: { enabled: isConfigured } });
   const paused = useReadContract({ address: contracts.optionFactory, abi: optionFactoryAbi, functionName: "paused", query: { enabled: isConfigured, refetchInterval: 5_000 } });
 
@@ -76,6 +81,8 @@ export function useAdminRoles() {
     isOracle: Boolean(address && isOracle.data),
     isWriter: Boolean(address && isWriter.data),
     isPauser: Boolean(address && isPauser.data),
+    isVaultManager: Boolean(address && isVaultManager.data),
+    isFuturesWriter: Boolean(address && isFuturesWriter.data),
     isUsdcOwner: Boolean(address && usdcOwner.data && usdcOwner.data.toLowerCase() === address.toLowerCase()),
     paused: Boolean(paused.data),
     isLoading: isOracle.isLoading || isWriter.isLoading,

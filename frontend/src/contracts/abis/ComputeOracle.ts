@@ -174,6 +174,30 @@ export const computeOracleAbi = [
   },
   {
     "type": "function",
+    "name": "getPriceAt",
+    "inputs": [
+      {
+        "name": "asset",
+        "type": "bytes32",
+        "internalType": "bytes32"
+      },
+      {
+        "name": "timestamp",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
     "name": "getPriceHistory",
     "inputs": [
       {

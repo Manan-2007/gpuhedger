@@ -13,6 +13,7 @@ export function LandingPage() {
       <StatsStrip />
       <Problem />
       <HowItWorks />
+      <Products />
       <ExampleHedge />
       <Users />
       <WhyMonad />
@@ -203,6 +204,30 @@ function HowItWorks() {
   );
 }
 
+function Products() {
+  const items = [
+    { to: "/hedge", t: "Hedge calculator", b: "Tell us your GPU-hours and budget. Get the cheapest hedge that caps your bill.", tag: "For AI startups" },
+    { to: "/trade", t: "Options", b: "Calls cap compute costs, puts floor rental revenue. Fully collateralized, cash-settled." },
+    { to: "/futures", t: "Futures", b: "Lock in an exact price per GPU-hour with zero premium, fully margined." },
+    { to: "/vault", t: "LP vault", b: "Deposit USDC, earn the premiums AI companies pay to hedge." },
+    { to: "/portfolio", t: "Transferable hedges", b: "Every position is an NFT. Move a hedge to a treasury wallet or sell it." },
+    { to: "/activity", t: "Onchain traction", b: "Every trade, exercise and payout, linked to its Monad transaction." },
+  ];
+  return (
+    <Section eyebrow="The platform" title="Everything needed to manage compute price risk.">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        {items.map((i) => (
+          <Link key={i.to} to={i.to} className={`panel group p-6 transition-colors hover:border-line-2 ${i.tag ? "border-primary/50 bg-primary/[0.04]" : ""}`}>
+            {i.tag && <span className="chip mb-3 border-primary/40 text-primary">{i.tag}</span>}
+            <h3 className="font-semibold">{i.t} <span className="text-dim transition-colors group-hover:text-primary">→</span></h3>
+            <p className="mt-2 text-sm text-muted">{i.b}</p>
+          </Link>
+        ))}
+      </div>
+    </Section>
+  );
+}
+
 function ExampleHedge() {
   const rows = [
     ["Need", "1,000 H100 GPU-hours next month"],
@@ -311,26 +336,27 @@ function WhyMonad() {
   );
 }
 
-export const ROADMAP = [
-  ["Phase 1", "Testnet MVP", "Collateralized GPU calls & puts, oracle, settlement on Monad Testnet.", true],
-  ["Phase 2", "Real compute price oracle", "Index built from cloud GPU rental rates, decentralized reporters."],
-  ["Phase 3", "Liquidity providers", "Permissionless writers and pooled collateral vaults."],
-  ["Phase 4", "Secondary option trading", "Tokenized positions and an onchain order book."],
-  ["Phase 5", "GPU futures", "Forward contracts to lock in a fixed compute price."],
+/** [phase, title, description, status shown on the card (if any)] */
+export const ROADMAP: readonly (readonly [string, string, string, string?])[] = [
+  ["Phase 1", "Testnet MVP", "Collateralized GPU calls & puts, oracle, settlement with automatic expiry claims.", "Live"],
+  ["Phase 2", "Real compute price oracle", "Oracle updater fed by live GPU rental marketplace prices; next, decentralized reporters.", "Prototype"],
+  ["Phase 3", "Liquidity providers", "ERC-4626 LP vault writes options with pooled USDC; next, permissionless writers.", "Prototype"],
+  ["Phase 4", "Secondary option trading", "Positions are transferable ERC-721s today; next, an onchain order book.", "Partial"],
+  ["Phase 5", "GPU futures", "Fully margined forwards that lock in a fixed compute price.", "Prototype"],
   ["Phase 6", "Compute-backed lending", "Borrow against reserved GPU capacity."],
   ["Phase 7", "SLA insurance", "Coverage for downtime and delivery failures."],
   ["Phase 8", "Institutional compute hedging", "Hedging desks and reporting for AI labs and clouds."],
-] as const;
+];
 
 function Roadmap() {
   return (
     <Section eyebrow="Roadmap" title="From a testnet primitive to the hedging layer for AI infrastructure.">
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        {ROADMAP.map(([phase, t, b, done]) => (
-          <div key={phase} className={`panel p-5 ${done ? "border-primary/50" : ""}`}>
+        {ROADMAP.map(([phase, t, b, status]) => (
+          <div key={phase} className={`panel p-5 ${status ? "border-primary/50" : ""}`}>
             <div className="flex items-center justify-between">
               <span className="num text-xs text-muted">{phase}</span>
-              {done && <span className="chip border-primary/40 text-primary">Live on testnet</span>}
+              {status && <span className="chip border-primary/40 text-primary">{status}</span>}
             </div>
             <h3 className="mt-2 font-semibold">{t}</h3>
             <p className="mt-1.5 text-sm text-muted">{b}</p>

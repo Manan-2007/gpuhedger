@@ -8,7 +8,13 @@ import {Pausable} from "@openzeppelin/contracts/utils/Pausable.sol";
 import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import {Clones} from "@openzeppelin/contracts/proxy/Clones.sol";
 import {ComputeOption} from "./ComputeOption.sol";
-import {GpuHedgerTypes, IComputeOracle, IComputeOption, IOptionFactory} from "./interfaces/IGpuHedger.sol";
+import {
+    GpuHedgerTypes,
+    IComputeOracle,
+    IComputeOption,
+    IOptionFactory,
+    IPositionNFT
+} from "./interfaces/IGpuHedger.sol";
 
 /// @title OptionFactory
 /// @notice Creates and indexes GPU compute option series. Each series is its own
@@ -25,6 +31,9 @@ contract OptionFactory is IOptionFactory, AccessControl, Pausable, ReentrancyGua
 
     /// @notice {ComputeOption} implementation that every series clones.
     address public immutable optionImplementation;
+
+    /// @notice ERC-721 that represents every position (minted on purchase).
+    address public immutable positionNFT;
 
     address[] private _series;
     mapping(address => bool) public isSeries;
@@ -74,12 +83,13 @@ contract OptionFactory is IOptionFactory, AccessControl, Pausable, ReentrancyGua
     error InvalidSeriesId();
     error OnlySeries();
 
-    constructor(address admin, address implementation, address oracle, address settlementToken) {
+    constructor(address admin, address implementation, address nft, address oracle, address settlementToken) {
         if (
-            admin == address(0) || implementation == address(0) || oracle == address(0)
+            admin == address(0) || implementation == address(0) || nft == address(0) || oracle == address(0)
                 || settlementToken == address(0)
         ) revert ZeroAddress();
         optionImplementation = implementation;
+        positionNFT = nft;
         _grantRole(DEFAULT_ADMIN_ROLE, admin);
         _grantRole(WRITER_ROLE, admin);
         _grantRole(PAUSER_ROLE, admin);
@@ -154,6 +164,12 @@ contract OptionFactory is IOptionFactory, AccessControl, Pausable, ReentrancyGua
         _record(kind, ComputeOption(msg.sender).seriesId(), account, contracts, amount);
     }
 
+    /// @notice Mint the PositionNFT for a new position. Only callable by registered series.
+    function mintPosition(address to, uint256 positionId) external returns (uint256 tokenId) {
+        if (!isSeries[msg.sender]) revert OnlySeries();
+        return IPositionNFT(positionNFT).mint(to, msg.sender, positionId);
+    }
+
     function _record(
         GpuHedgerTypes.ActivityKind kind,
         uint256 seriesId,
@@ -169,7 +185,8 @@ contract OptionFactory is IOptionFactory, AccessControl, Pausable, ReentrancyGua
                 _isTrader[account] = true;
                 uniqueTraders += 1;
             }
-        } else if (kind == GpuHedgerTypes.ActivityKind.Exercise) {
+        } else if (kind == GpuHedgerTypes.ActivityKind.Exercise || kind == GpuHedgerTypes.ActivityKind.Claim)
+        {
             totalExercises += 1;
             totalPayouts += amount;
         }
@@ -239,26 +256,24 @@ contract OptionFactory is IOptionFactory, AccessControl, Pausable, ReentrancyGua
         }
     }
 
-    /// @notice Every position held by `user` across all series.
+    /// @notice Every position currently held by `user` (via PositionNFT ownership) across all series.
     function getUserPositions(address user)
         external
         view
         returns (GpuHedgerTypes.UserPosition[] memory list)
     {
-        uint256 total;
-        uint256 n = _series.length;
-        GpuHedgerTypes.Position[][] memory perSeries = new GpuHedgerTypes.Position[][](n);
+        IPositionNFT nft = IPositionNFT(positionNFT);
+        uint256 n = nft.balanceOf(user);
+        list = new GpuHedgerTypes.UserPosition[](n);
         for (uint256 i = 0; i < n; i++) {
-            perSeries[i] = IComputeOption(_series[i]).getUserPositions(user);
-            total += perSeries[i].length;
-        }
-        list = new GpuHedgerTypes.UserPosition[](total);
-        uint256 k;
-        for (uint256 i = 0; i < n; i++) {
-            for (uint256 j = 0; j < perSeries[i].length; j++) {
-                list[k++] =
-                    GpuHedgerTypes.UserPosition({seriesId: i, option: _series[i], position: perSeries[i][j]});
-            }
+            uint256 tokenId = nft.tokenOfOwnerByIndex(user, i);
+            (address option, uint256 positionId) = nft.positionOf(tokenId);
+            list[i] = GpuHedgerTypes.UserPosition({
+                seriesId: IComputeOption(option).seriesId(),
+                option: option,
+                tokenId: tokenId,
+                position: IComputeOption(option).getPosition(positionId)
+            });
         }
     }
 
@@ -273,6 +288,21 @@ contract OptionFactory is IOptionFactory, AccessControl, Pausable, ReentrancyGua
         list = new GpuHedgerTypes.Activity[](n);
         for (uint256 i = 0; i < n; i++) {
             list[i] = _activity[_activity.length - 1 - i];
+        }
+    }
+
+    /// @notice Activity records [start, start + count), oldest first — for paginated history.
+    function getActivityRange(uint256 start, uint256 count)
+        external
+        view
+        returns (GpuHedgerTypes.Activity[] memory list)
+    {
+        if (start >= _activity.length) return new GpuHedgerTypes.Activity[](0);
+        if (count > MAX_ACTIVITY_RETURNED) count = MAX_ACTIVITY_RETURNED;
+        uint256 end = start + count > _activity.length ? _activity.length : start + count;
+        list = new GpuHedgerTypes.Activity[](end - start);
+        for (uint256 i = start; i < end; i++) {
+            list[i - start] = _activity[i];
         }
     }
 

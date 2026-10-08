@@ -8,6 +8,9 @@ interface Deployment {
   usdc: Address;
   oracle: Address;
   optionFactory: Address;
+  positionNFT?: Address;
+  vault?: Address;
+  futures?: Address;
 }
 
 // Written by contracts/script/Deploy.s.sol
@@ -31,6 +34,9 @@ export const addresses = {
   usdc: pick(import.meta.env.VITE_USDC_ADDRESS, deployment?.usdc),
   oracle: pick(import.meta.env.VITE_ORACLE_ADDRESS, deployment?.oracle),
   optionFactory: pick(import.meta.env.VITE_OPTION_FACTORY_ADDRESS, deployment?.optionFactory),
+  positionNFT: pick(import.meta.env.VITE_POSITION_NFT_ADDRESS, deployment?.positionNFT),
+  vault: pick(import.meta.env.VITE_VAULT_ADDRESS, deployment?.vault),
+  futures: pick(import.meta.env.VITE_FUTURES_ADDRESS, deployment?.futures),
 };
 
 export const deployer = deployment?.deployer;
@@ -38,4 +44,15 @@ export const deployer = deployment?.deployer;
 export const isConfigured = Boolean(addresses.usdc && addresses.oracle && addresses.optionFactory);
 
 /** Non-null contract addresses. Only use behind an `isConfigured` check. */
-export const contracts = addresses as { usdc: Address; oracle: Address; optionFactory: Address };
+export const contracts = addresses as {
+  usdc: Address;
+  oracle: Address;
+  optionFactory: Address;
+  positionNFT: Address;
+  vault: Address;
+  futures: Address;
+};
+
+export const hasVault = isConfigured && Boolean(addresses.vault);
+export const hasFutures = isConfigured && Boolean(addresses.futures);
+export const hasPositionNFT = isConfigured && Boolean(addresses.positionNFT);

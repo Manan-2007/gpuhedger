@@ -1,6 +1,7 @@
 import { useMemo } from "react";
 import { useReadContract } from "wagmi";
-import { computeOptionAbi, optionFactoryAbi } from "../contracts/abis";
+import type { Address } from "viem";
+import { computeOptionAbi, optionFactoryAbi, positionNFTAbi } from "../contracts/abis";
 import { contracts, isConfigured } from "../contracts/addresses";
 import { bytes32ToString, fromUsdc } from "../utils/formatters";
 import { isGpuSymbol } from "../types/markets";
@@ -93,6 +94,23 @@ export function useOptionActions() {
       args: [positionId],
     });
 
+  const claim = (series: OptionSeries, positionId: bigint) =>
+    tx.execute(`Claim ${series.gpu} ${series.kind} payout`, {
+      address: series.address,
+      abi: computeOptionAbi,
+      functionName: "claim",
+      args: [positionId],
+    });
+
+  /** Positions are ERC-721 tokens: transferring the NFT transfers the hedge. */
+  const transfer = (from: Address, to: Address, tokenId: bigint) =>
+    tx.execute(`Transfer position NFT #${tokenId}`, {
+      address: contracts.positionNFT,
+      abi: positionNFTAbi,
+      functionName: "safeTransferFrom",
+      args: [from, to, tokenId],
+    });
+
   const expire = (series: OptionSeries) =>
     tx.execute(`Settle expired series #${series.id}`, {
       address: series.address,
@@ -100,5 +118,5 @@ export function useOptionActions() {
       functionName: "expire",
     });
 
-  return { ...tx, buy, exercise, expire };
+  return { ...tx, buy, exercise, claim, transfer, expire };
 }

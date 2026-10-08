@@ -85,11 +85,16 @@ OptionFactory  ── clones ──►  ComputeOption (one per series, holds col
 |---|---|
 | `MockUSDC.sol` | 6-decimal **testnet-only** ERC20 with a public `faucet()` (configurable amount and cooldown) |
 | `ComputeOracle.sol` | Permissioned GPU price feed (`setPrice`, `setPrices`, `getPrice`, `getPriceWithTimestamp`, `setVolatility`, onchain price history). Implements `IComputeOracle` so it can later be swapped for a decentralized oracle. |
-| `ComputeOption.sol` | One option series: `buyOption`, `exercise`, `expire`, `getPosition`, `getOptionDetails`, `isInTheMoney`, `calculateExerciseValue`, plus writer collateral management |
-| `OptionFactory.sol` | `createOptionSeries()` deploys an EIP-1167 clone per series, pulls collateral, assigns a unique series ID, indexes positions, records protocol activity and traction stats, and holds the pause switch |
+| `ComputeOption.sol` | One option series: `buyOption`, `exercise`, `expire`, `claim`, `getPosition`, `getOptionDetails`, `isInTheMoney`, `calculateExerciseValue`, plus writer collateral management |
+| `OptionFactory.sol` | `createOptionSeries()` deploys an EIP-1167 clone per series, pulls collateral, assigns a unique series ID, mints position NFTs, records protocol activity and traction stats, and holds the pause switch |
+| `PositionNFT.sol` | ERC-721 for every position, with fully onchain SVG metadata. The token holder owns the position, so hedges are transferable. |
+| `ComputeVault.sol` | ERC-4626 LP vault. LPs deposit USDC, the manager writes option series with pooled liquidity, and premiums accrue to LPs. Withdrawals are limited to idle liquidity; `harvest()` returns collateral from settled series. |
+| `ComputeFutures.sol` | Fully margined GPU forwards: LONG locks a compute cost, SHORT locks rental revenue. Settles at the oracle price at expiry, with moves capped at a band. |
 | `interfaces/IGpuHedger.sol` | Shared types and interfaces |
 
-**Collateral model (fully collateralized).** On creation, the writer deposits `cap × contractSize × capacity` USDC into the series. Buyers pay the premium directly to the writer. Collateral backing open positions stays locked until exercise or expiry. The writer can only withdraw collateral for unsold capacity (`reduceCapacity`), surplus left over when an exercise paid less than the cap (`withdrawFreeCollateral`), or everything left after expiry (`expire()`, callable by anyone).
+**Collateral model (fully collateralized).** On creation, the writer deposits `cap × contractSize × capacity` USDC into the series. Buyers pay the premium directly to the writer. Collateral backing open positions stays locked until exercise or expiry. The writer can only withdraw collateral for unsold capacity (`reduceCapacity`) or surplus left over when an exercise paid less than the cap (`withdrawFreeCollateral`).
+
+**Settlement at expiry.** `expire()` (callable by anyone) settles the series at the oracle price in effect at the expiration timestamp, looked up with `ComputeOracle.getPriceAt` in the onchain price history, so later updates can't change it. It reserves what in-the-money holders are owed and releases the rest to the writer. Holders then `claim()`, which settles the series first if nobody has. Nothing expires worthless just because the holder was offline.
 
 ### Frontend (`frontend/src`)
 
@@ -142,7 +147,7 @@ This is not institutional-grade pricing. GPU compute can't be continuously hedge
 - Reverts on double exercise, exercise after expiry, out-of-the-money exercise, non-owner exercise, unauthorized oracle updates, withdrawal of locked collateral, re-initializing a clone, and spoofed activity records
 - Global pause blocks purchases and exercises
 
-**Tests:** `contracts/test/GpuHedger.t.sol` has 30 Foundry tests, including a 256-run fuzz test that payouts never exceed collateral. It covers all required scenarios: deploy, create H100/A100 call and put, buy call and put, premium payment, position creation, profitable call and put exercise, out-of-the-money rejection, expired rejection, double-exercise prevention, oracle update, unauthorized oracle update, collateral locking and release, settlement transfer, and multiple users.
+**Tests:** 42 Foundry tests (`contracts/test/GpuHedger.t.sol` and `Extensions.t.sol`), including a 256-run fuzz test that payouts never exceed collateral. It covers all required scenarios: deploy, create H100/A100 call and put, buy call and put, premium payment, position creation, profitable call and put exercise, out-of-the-money rejection, expired rejection, double-exercise prevention, oracle update, unauthorized oracle update, collateral locking and release, settlement transfer, and multiple users, plus expiry claims, NFT transfers, the LP vault and futures.
 
 ---
 
@@ -187,14 +192,13 @@ For local MetaMask use, add the network *Localhost 8545* (chain ID 31337) and im
 | Faucet | https://faucet.monad.xyz |
 
 ```bash
-# Store the deployer key encrypted (never commit keys or put them in .env files)
-cast wallet import gpuhedger-deployer --interactive
-
-cd contracts
-forge script script/Deploy.s.sol --rpc-url monad_testnet --account gpuhedger-deployer --broadcast
+# One command. Uses the encrypted Foundry keystore "gpuhedger-deployer" and refuses to run below 4 MON.
+bash scripts/deploy-testnet.sh
 ```
 
-The script deploys, in order, **MockUSDC → ComputeOracle → ComputeOption implementation → OptionFactory**. It grants the deployer admin, oracle, writer, and pauser roles, sets H100 $2.00 / A100 $1.30 / B200 $3.80, mints writer collateral, and creates 9 markets:
+To use your own wallet instead, run `cast wallet import gpuhedger-deployer --interactive` first; the script prompts for the keystore password. Keys are never committed or put in `.env` files.
+
+The script deploys, in order, **MockUSDC → ComputeOracle → PositionNFT → ComputeOption implementation → OptionFactory → ComputeVault → ComputeFutures**. It grants the deployer admin, oracle, writer, pauser and vault-manager roles, sets H100 $2.00 / A100 $1.30 / B200 $3.80, and mints writer collateral. It then creates 9 markets, seeds the LP vault with $250,000 (which writes an H100 $2.40 call and an A100 $1.25 put), and opens 3 futures markets:
 
 | GPU | Type | Strike | Expiry | Region |
 |---|---|---|---|---|
@@ -208,7 +212,7 @@ The script deploys, in order, **MockUSDC → ComputeOracle → ComputeOption imp
 | B200 | CALL | $4.20 | 60D | US-East |
 | B200 | PUT | $3.50 | 30D | US-West |
 
-It writes the addresses to `contracts/deployments/10143.json` and `frontend/src/contracts/deployments/10143.json`, and the frontend picks them up automatically. The full deployment uses about 17M gas, roughly **2.5 MON** at ~100 gwei, because Monad charges for the gas *limit*. Optionally verify with `--verify --verifier sourcify --verifier-url https://sourcify-api-monad.blockvision.org`.
+It writes the addresses to `contracts/deployments/10143.json` and `frontend/src/contracts/deployments/10143.json`, and the frontend picks them up automatically. The full deployment uses about 29M gas, roughly **3.8 MON** at ~100 gwei, because Monad charges for the gas *limit*. Optionally verify with `--verify --verifier sourcify --verifier-url https://sourcify-api-monad.blockvision.org`.
 
 Then run the frontend on testnet (the default chain):
 
@@ -216,7 +220,21 @@ Then run the frontend on testnet (the default chain):
 cd frontend && cp .env.example .env && npm run dev
 ```
 
-Addresses can also be set explicitly with `VITE_USDC_ADDRESS`, `VITE_ORACLE_ADDRESS`, and `VITE_OPTION_FACTORY_ADDRESS`. If you change the contracts, run `npm run abis` after `forge build`.
+Addresses can also be set explicitly with the `VITE_*_ADDRESS` variables in `.env.example`. If you change the contracts, run `npm run abis` after `forge build`.
+
+### Hosting the frontend
+
+- **Vercel:** import the repo, set the root directory to `frontend` (`frontend/vercel.json` handles routing), and deploy. No environment variables are needed once `frontend/src/contracts/deployments/10143.json` is committed.
+- **GitHub Pages:** `.github/workflows/deploy-pages.yml` builds and publishes on every push to `main`. Enable it under Settings → Pages → Source: *GitHub Actions*. Pages on a private repo needs a paid GitHub plan.
+
+### Feeding the oracle real prices
+
+`scripts/oracle-keeper.mjs` samples live on-demand offers from the Vast.ai public GPU marketplace and takes a trimmed median $/GPU-hour per GPU. It limits each move to 25% and skips changes under 1%, then calls `setPrices`. It's a dry run unless you pass `--send`, and `--interval 15` keeps it running every 15 minutes. Don't run it during the scripted demo, since it overwrites manual prices.
+
+```bash
+node scripts/oracle-keeper.mjs                                                     # local dry run
+CHAIN_ID=10143 RPC_URL=https://testnet-rpc.monad.xyz ORACLE_KEY=0x… node scripts/oracle-keeper.mjs --send
+```
 
 ## Using the app
 
@@ -224,7 +242,12 @@ Addresses can also be set explicitly with `VITE_USDC_ADDRESS`, `VITE_ORACLE_ADDR
 - **Getting test USDC.** Click **GET TEST USDC** (Portfolio or trade panel) to mint 10,000 test USDC. It's labelled *Testnet only*. Gas requires testnet MON from the Monad faucet.
 - **Creating an option.** On `/admin` with the deployer wallet, pick a GPU, type, strike, expiry, size, premium (defaults to model price + 8%), cap, and capacity. Click **APPROVE COLLATERAL**, then **CREATE SERIES**. The series appears in `/markets` automatically.
 - **Buying an option.** On `/trade`, choose GPU → CALL/PUT → strike → expiry and enter a quantity. Review premium, total cost, break-even, max loss, potential profit, and the payoff chart. Acknowledge the risk disclosure, then **APPROVE USDC** (if needed) → **BUY CALL**. The status runs Signature → Submitted → Confirming → **SETTLED ✓**, with the tx hash and explorer link.
-- **Exercising an option.** In `/portfolio`, in-the-money open positions show **EXERCISE**. The contract reads the oracle, pays USDC to your wallet, and marks the position EXERCISED.
+- **Exercising an option.** In `/portfolio`, in-the-money open positions show **EXERCISE**. The contract reads the oracle, pays USDC to your wallet, and marks the position EXERCISED. After expiry, in-the-money positions show **CLAIM** instead.
+- **Transferring a hedge.** Expand a position in `/portfolio`, enter an address and click **TRANSFER**. This moves the position NFT, and with it the right to exercise or claim.
+- **Sizing a hedge.** `/hedge` takes your GPU-hours, budget and a stress price. It compares every live option and futures hedge, recommends one, and links straight to the trade.
+- **Futures.** `/futures`: pick a market, choose LONG (lock cost) or SHORT (lock revenue), approve margin, and open. After expiry, anyone can **SETTLE**.
+- **LP vault.** `/vault`: deposit test USDC for `ghLP` shares and withdraw up to the vault's idle liquidity. The vault manager writes series from `/admin` with *Write from LP vault*.
+- **Traction.** `/activity` shows onchain stats and every trade, linked to its transaction.
 
 ## Hackathon demo flow
 
@@ -247,10 +270,14 @@ Reset between runs with **H100 → $2.00** on `/admin`.
 ## Testing
 
 ```bash
-cd contracts && forge test -vv      # 30 tests incl. fuzzing
-npm run demo-flow                   # scripted onchain E2E against a deployment (local by default)
+cd contracts && forge test -vv      # 42 tests incl. fuzzing
+npm run demo-flow                   # scripted onchain E2E of the core demo (local by default)
 npm --prefix frontend run build     # typecheck + production build
 ```
+
+`scripts/e2e-extensions.mjs` checks claims after expiry, NFT transfers, the LP vault and futures. It fast-forwards time, so run it against a throwaway Anvil chain (instructions at the top of the file).
+
+A 2-minute demo video script with Q&A answers is in [`docs/DEMO_SCRIPT.md`](docs/DEMO_SCRIPT.md).
 
 To run `demo-flow` against testnet: `CHAIN_ID=10143 RPC_URL=https://testnet-rpc.monad.xyz ADMIN_KEY=… BUYER_KEY=… npm run demo-flow`. Set the keys only in your shell session.
 
@@ -258,21 +285,21 @@ To run `demo-flow` against testnet: `CHAIN_ID=10143 RPC_URL=https://testnet-rpc.
 
 | Phase | Milestone |
 |---|---|
-| 1 | **Testnet MVP**: collateralized GPU calls and puts, oracle, settlement *(this repo)* |
-| 2 | Real compute price oracle: an index from cloud GPU rental rates, with decentralized reporters |
-| 3 | Liquidity providers: permissionless writers and pooled collateral vaults |
-| 4 | Secondary option trading: tokenized positions and an order book |
-| 5 | GPU futures: lock in a fixed compute price |
+| 1 | **Testnet MVP**: collateralized GPU calls and puts, oracle, settlement with expiry claims *(live)* |
+| 2 | Real compute price oracle: keeper fed by live rental marketplace prices *(prototype)*; next, decentralized reporters |
+| 3 | Liquidity providers: ERC-4626 LP vault *(prototype)*; next, permissionless writers |
+| 4 | Secondary option trading: positions are transferable ERC-721s *(partial)*; next, an order book |
+| 5 | GPU futures: fully margined forwards *(prototype)* |
 | 6 | Compute-backed lending |
 | 7 | SLA insurance for downtime and delivery failures |
 | 8 | Institutional compute hedging desks for AI labs and clouds |
 
 ## Known limitations
 
-- The oracle is a **permissioned demo feed** controlled by the admin, not a real GPU price index.
+- The oracle is **permissioned**: a single reporter (the admin, or the keeper script fed by marketplace prices), not a decentralized GPU price index.
 - Market statistics, price history charts, and bids are **simulated** and labelled as such.
 - Payouts are capped at the series cap so every series stays fully collateralized. The cap defaults to the strike, i.e. a call pays out up to a 2× price move.
-- One writer per series, a fixed premium set at creation, and no secondary market. Positions are not transferable.
-- Unexercised in-the-money positions expire worthless at expiry. There is no automatic exercise.
+- One writer per series and a fixed premium set at creation. Positions are transferable NFTs, but there is no order book yet.
+- The LP vault is manager-operated, and its NAV marks liabilities at intrinsic value, not model value. Futures have a single market maker per market.
 - Portfolio values for open positions are Black-Scholes **estimates**, not market marks.
 - Test USDC has no value. The code is unaudited hackathon software, so don't use it with real funds.

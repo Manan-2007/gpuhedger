@@ -8,7 +8,7 @@ const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 const outDir = join(root, "frontend/src/contracts/abis");
 mkdirSync(outDir, { recursive: true });
 
-const contracts = ["MockUSDC", "ComputeOracle", "ComputeOption", "OptionFactory"];
+const contracts = ["MockUSDC", "ComputeOracle", "ComputeOption", "OptionFactory", "PositionNFT", "ComputeVault", "ComputeFutures"];
 const index = [];
 
 for (const name of contracts) {
