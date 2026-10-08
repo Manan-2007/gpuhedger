@@ -9,11 +9,12 @@ import { FuturesPositions } from "../components/FuturesPositions";
 import { useMonBalance, useUSDC, useUSDCActions } from "../hooks/useUSDC";
 import { useAllGpuPrices } from "../hooks/useOracle";
 import { activeChain, MONAD_FAUCET_URL, isLocalChain } from "../lib/chain";
-import { formatNumber, formatPrice, formatSignedUsd, formatUsd, pnlClass, timeAgo } from "../utils/formatters";
+import { formatNumber, formatPrice, formatSignedUsd, formatUsd, timeAgo } from "../utils/formatters";
 import { PositionTable } from "../components/PositionTable";
+import { PositionCard } from "../components/PositionCard";
 import { TransactionStatus } from "../components/TransactionStatus";
 import { ConnectButton, SwitchNetworkButton, useWrongNetwork } from "../components/WalletButton";
-import { EmptyState, ErrorNote, ExplorerLink, OnchainTag, OracleUnavailable, SectionHeader, Skeleton, Spinner, StatCard } from "../components/ui";
+import { EmptyState, ErrorNote, ExplorerLink, OnchainTag, OracleUnavailable, PnlValue, SectionHeader, Skeleton, Spinner, StatCard } from "../components/ui";
 
 type Tab = "OPEN" | "EXERCISED" | "EXPIRED" | "ALL";
 
@@ -44,6 +45,7 @@ export function PortfolioPage() {
 
 function Portfolio() {
   const { address } = useAccount();
+  const wrongNetwork = useWrongNetwork();
   const { positions, summary, isLoading, isError } = usePortfolio();
   const usdc = useUSDC();
   const mon = useMonBalance();
@@ -108,7 +110,7 @@ function Portfolio() {
       <div className="grid gap-4 lg:grid-cols-[1fr_340px]">
         <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
           <StatCard label="Portfolio value" value={formatUsd(summary.portfolioValue)} sub="Open positions · model est." />
-          <StatCard label="Total P&L" value={formatSignedUsd(summary.totalPnl)} valueClass={pnlClass(summary.totalPnl)} sub={`Unrealized ${formatSignedUsd(summary.unrealized)}`} />
+          <StatCard label="Total P&L" value={<PnlValue value={summary.totalPnl} />} sub={`Unrealized ${formatSignedUsd(summary.unrealized)} (model est.)`} />
           <StatCard label="Open positions" value={formatNumber(summary.open.length)} sub={`${formatNumber(summary.open.reduce((a, p) => a + p.contracts, 0))} contracts`} />
           <StatCard label="Settled payouts" value={formatUsd(summary.payouts)} valueClass={summary.payouts > 0 ? "text-pos" : ""} sub={`${summary.exercised.length} exercised · ${summary.expired.length} expired`} />
           <div className="panel col-span-2 p-4 md:col-span-4">
@@ -191,7 +193,29 @@ function Portfolio() {
             action={positions.length === 0 ? <Link to="/trade" className="btn-primary">TRADE COMPUTE</Link> : undefined}
           />
         ) : (
-          <PositionTable positions={shown} actions={actions} activeKey={activeKey} onExercise={onExercise} onClaim={onClaim} onTransfer={onTransfer} />
+          tab === "OPEN" ? (
+            <>
+              <div className="grid gap-4 lg:grid-cols-2">
+                {shown.map((p) => (
+                  <PositionCard
+                    key={p.key}
+                    p={p}
+                    busy={actions.isBusy && activeKey === p.key}
+                    disabled={actions.isBusy || wrongNetwork}
+                    onExercise={onExercise}
+                    onClaim={onClaim}
+                    onTransfer={onTransfer}
+                  />
+                ))}
+              </div>
+              <p className="mt-3 text-xs text-dim">
+                *Unrealized P&L and estimated value are a model estimate (Black-Scholes, floored at exercise value), not a production
+                market mark. Exercise value uses the live onchain oracle price.
+              </p>
+            </>
+          ) : (
+            <PositionTable positions={shown} actions={actions} activeKey={activeKey} onExercise={onExercise} onClaim={onClaim} onTransfer={onTransfer} />
+          )
         )}
       </div>
 

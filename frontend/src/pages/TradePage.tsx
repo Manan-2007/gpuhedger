@@ -7,7 +7,8 @@ import { OptionSelector, type Selection } from "../components/OptionSelector";
 import { PayoffChart } from "../components/PayoffChart";
 import { TradePanel } from "../components/TradePanel";
 import { EmptyState, ErrorNote, OracleUnavailable, SectionHeader, Skeleton } from "../components/ui";
-import { formatPrice, formatTenor, formatUsd } from "../utils/formatters";
+import { formatPrice, formatUsd } from "../utils/formatters";
+import { SeriesHeader } from "../components/SeriesHeader";
 import { isConfigured } from "../contracts/addresses";
 
 export function TradePage() {
@@ -77,10 +78,9 @@ export function TradePage() {
               price?.isLoading ? <Skeleton className="h-96" /> : <OracleUnavailable gpu={selection.gpu} />
             ) : selected && oracleReady ? (
               <div className="panel p-4 sm:p-5">
-                <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
-                  <h2 className="font-semibold">
-                    {selected.gpu} {selected.kind} {formatPrice(selected.strike)} · {formatTenor(selected.expiration)}
-                  </h2>
+                <SeriesHeader series={selected} spot={spot} updatedAt={price?.updatedAt} />
+                <div className="my-5 flex items-center justify-between gap-2 border-t border-line pt-4">
+                  <h3 className="text-sm font-semibold">Payoff at expiry · {contracts || 0} contract{contracts === 1 ? "" : "s"}</h3>
                   <Link to={`/markets/${selected.id}`} className="text-xs text-secondary hover:underline">
                     Full market view →
                   </Link>
@@ -118,7 +118,7 @@ export function TradePage() {
       {selected && oracleReady && (
         <div className="fixed inset-x-0 bottom-0 z-30 border-t border-line bg-bg/95 p-3 backdrop-blur lg:hidden">
           <a href="#trade-panel" className={"btn-primary w-full py-3"}>
-            BUY {selected.kind} · {formatUsd(selected.premium * selected.contractSize * contracts)}
+            REVIEW ORDER · {formatUsd(selected.premium * selected.contractSize * contracts)}
           </a>
         </div>
       )}

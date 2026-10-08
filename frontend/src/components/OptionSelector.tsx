@@ -23,6 +23,8 @@ export function OptionSelector({
   const forGpuKind = series.filter((s) => s.gpu === selection.gpu && s.kind === selection.kind);
   const selected = series.find((s) => s.id === selection.seriesId);
   const strikes = [...new Set(forGpuKind.map((s) => s.strike))].sort((a, b) => a - b);
+  // Cheapest live premium at each strike, shown on the chip so prices are comparable at a glance.
+  const premiumAt = (k: number) => Math.min(...forGpuKind.filter((s) => s.strike === k).map((s) => s.premium));
   const expiries = selected ? forGpuKind.filter((s) => s.strike === selected.strike).sort((a, b) => a.expiration - b.expiration) : [];
 
   const pick = (gpu: GpuSymbol, kind: OptionKind, strike?: number) => {
@@ -85,9 +87,10 @@ export function OptionSelector({
                   <button
                     key={k}
                     onClick={() => pick(selection.gpu, selection.kind, k)}
-                    className={`seg num border ${selected?.strike === k ? "border-primary/60 bg-primary/10 text-primary" : "border-line text-muted hover:text-fg"}`}
+                    className={`seg num border text-left ${selected?.strike === k ? "border-primary/60 bg-primary/10 text-primary" : "border-line text-muted hover:text-fg"}`}
                   >
-                    {formatPrice(k)}
+                    <div className="text-sm">{formatPrice(k)}</div>
+                    <div className="text-[10px] font-normal opacity-80">{formatPrice(premiumAt(k))} premium</div>
                   </button>
                 ))}
               </div>

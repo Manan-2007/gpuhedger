@@ -14,6 +14,8 @@ export interface TxState {
   error?: string;
   /** Milliseconds from broadcast to receipt. */
   settleMs?: number;
+  /** performance.now() when the wallet returned the hash; drives the live settle timer. */
+  sentAt?: number;
   blockNumber?: bigint;
 }
 
@@ -49,7 +51,7 @@ export function useTransaction() {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const hash = await writeContractAsync({ ...(request as any), chainId: activeChain.id });
         const sentAt = performance.now();
-        setState({ phase: "submitted", label, hash });
+        setState({ phase: "submitted", label, hash, sentAt });
         // Move to "confirming" on the next frame so the submitted state is visible.
         requestAnimationFrame(() => setState((s) => (s.hash === hash && s.phase === "submitted" ? { ...s, phase: "confirming" } : s)));
 
@@ -59,7 +61,7 @@ export function useTransaction() {
           setState({ phase: "failed", label, hash, error: "The transaction was mined but reverted onchain." });
           return undefined;
         }
-        setState({ phase: "confirmed", label, hash, settleMs, blockNumber: receipt.blockNumber });
+        setState({ phase: "confirmed", label, hash, sentAt, settleMs, blockNumber: receipt.blockNumber });
         await queryClient.invalidateQueries();
         return receipt;
       } catch (error) {

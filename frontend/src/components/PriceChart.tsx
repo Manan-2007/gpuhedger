@@ -12,7 +12,8 @@ type Mode = "simulated" | "oracle";
 /** GPU price history. Market history is simulated; the "Oracle" tab shows real onchain updates. */
 export function PriceChart({ gpu, price, volatility, height = 260 }: { gpu: GpuSymbol; price: number; volatility: number; height?: number }) {
   const [range, setRange] = useState<TimeRange>("1M");
-  const [mode, setMode] = useState<Mode>("simulated");
+  // Real onchain oracle updates first; the simulated market history is opt-in and labelled.
+  const [mode, setMode] = useState<Mode>("oracle");
   const oracle = useOracleHistory(gpu);
 
   const data = useMemo(() => {
@@ -34,13 +35,13 @@ export function PriceChart({ gpu, price, volatility, height = 260 }: { gpu: GpuS
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-2">
           <div className="flex rounded-lg border border-line bg-bg p-0.5">
-            {(["simulated", "oracle"] as Mode[]).map((m) => (
+            {(["oracle", "simulated"] as Mode[]).map((m) => (
               <button
                 key={m}
                 onClick={() => setMode(m)}
                 className={`seg ${mode === m ? "bg-panel-2 text-fg" : "text-muted hover:text-fg"}`}
               >
-                {m === "simulated" ? "Market" : "Oracle updates"}
+                {m === "simulated" ? "Market (simulated)" : "Oracle updates"}
               </button>
             ))}
           </div>

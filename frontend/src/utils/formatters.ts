@@ -47,11 +47,13 @@ export function formatUsd(value: number, decimals = 2): string {
   return usdFmt(decimals).format(value);
 }
 
-/** Price per GPU-hour: $2.14, or $0.035 for sub-dollar premiums. */
+/** Price per GPU-hour: $2.14, $0.035 for sub-dollar premiums, and $2.235 when cents would round
+ *  (a break-even of $2.235 must not display as $2.24). */
 export function formatPrice(value: number): string {
   if (!Number.isFinite(value)) return "—";
   if (value !== 0 && Math.abs(value) < 0.1) return usdFmt(3).format(value);
-  return usdFmt(2).format(value);
+  const offCents = Math.abs(value * 100 - Math.round(value * 100)) > 1e-6;
+  return usdFmt(offCents ? 3 : 2).format(value);
 }
 
 /** +$240.00 / −$12.50 */
@@ -64,7 +66,7 @@ export function formatSignedUsd(value: number, decimals = 2): string {
 
 export function formatPct(value: number, decimals = 1, signed = true): string {
   if (!Number.isFinite(value)) return "—";
-  const s = Math.abs(value).toFixed(decimals) + "%";
+  const s = Math.abs(value).toLocaleString("en-US", { minimumFractionDigits: decimals, maximumFractionDigits: decimals }) + "%";
   if (!signed) return s;
   return value > 0 ? `+${s}` : value < 0 ? `−${s}` : s;
 }

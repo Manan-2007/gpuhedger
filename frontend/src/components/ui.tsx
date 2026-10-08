@@ -2,7 +2,8 @@ import type { ReactNode } from "react";
 import { Link } from "react-router-dom";
 import type { OptionKind } from "../types/options";
 import { addressUrl, txUrl } from "../lib/chain";
-import { shortAddress, shortHash } from "../utils/formatters";
+import { formatDuration, formatSignedUsd, shortAddress, shortHash, timeAgo } from "../utils/formatters";
+import { useNow } from "../hooks/useNow";
 
 export function Logo({ className = "" }: { className?: string }) {
   return (
@@ -94,6 +95,34 @@ export function ExplorerLink({ hash, address, label }: { hash?: string; address?
       {text} ↗
     </a>
   );
+}
+
+/** Signed P&L with an arrow, so profit and loss never rely on colour alone. */
+export function PnlValue({ value, className = "", decimals = 2 }: { value: number; className?: string; decimals?: number }) {
+  const flat = Math.abs(value) < 0.005;
+  const cls = flat ? "text-muted" : value > 0 ? "text-pos" : "text-neg";
+  return (
+    <span className={`num inline-flex items-baseline gap-1 font-semibold ${cls} ${className}`}>
+      {!flat && (
+        <span aria-hidden className="text-[0.7em]">
+          {value > 0 ? "▲" : "▼"}
+        </span>
+      )}
+      {formatSignedUsd(value, decimals)}
+    </span>
+  );
+}
+
+/** Time left until `expiration` (unix seconds). Re-renders only itself. */
+export function Countdown({ expiration, className = "" }: { expiration: number; className?: string }) {
+  const now = useNow(1_000);
+  return <span className={`num ${className}`}>{formatDuration(expiration - now / 1000)}</span>;
+}
+
+/** "12s ago" for an onchain timestamp (unix seconds). Re-renders only itself. */
+export function Ago({ timestamp, className = "" }: { timestamp: number; className?: string }) {
+  const now = useNow(1_000);
+  return <span className={`num ${className}`}>{timeAgo(timestamp, now)}</span>;
 }
 
 export function Skeleton({ className = "" }: { className?: string }) {

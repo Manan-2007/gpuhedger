@@ -3,9 +3,9 @@ import { isAddress, type Address } from "viem";
 import { Link } from "react-router-dom";
 import type { PositionView } from "../types/options";
 import type { useOptionActions } from "../hooks/useOption";
-import { formatDate, formatDuration, formatNumber, formatPct, formatPrice, formatSignedUsd, formatTenor, formatUsd, pnlClass } from "../utils/formatters";
+import { formatDate, formatDuration, formatNumber, formatPct, formatPrice, formatTenor, formatUsd } from "../utils/formatters";
 import { useWrongNetwork } from "./WalletButton";
-import { OptionTypeBadge, Spinner } from "./ui";
+import { OptionTypeBadge, PnlValue, Spinner } from "./ui";
 
 const DAY = 86_400;
 
@@ -26,7 +26,7 @@ function statusChip(p: PositionView): { label: string; cls: string } {
   }
 }
 
-function StatusChip({ p }: { p: PositionView }) {
+export function StatusChip({ p }: { p: PositionView }) {
   const { label, cls } = statusChip(p);
   return <span className={`chip whitespace-nowrap ${cls}`}>{label}</span>;
 }
@@ -123,7 +123,7 @@ export function PositionTable({
                     <td className="num px-4 py-3.5 text-right">{formatNumber(p.contracts)}</td>
                     <td className="num px-4 py-3.5 text-right">{formatUsd(p.premiumPaid)}</td>
                     <td className="num px-4 py-3.5 text-right">{formatUsd(value)}</td>
-                    <td className={`num px-4 py-3.5 text-right font-semibold ${pnlClass(p.pnl)}`}>{formatSignedUsd(p.pnl)}</td>
+                    <td className="px-4 py-3.5 text-right"><PnlValue value={p.pnl} /></td>
                     <td className="px-4 py-3.5"><StatusChip p={p} /></td>
                     <td className="px-4 py-3.5 text-right">{exerciseButton(p)}</td>
                   </tr>
@@ -164,7 +164,7 @@ export function PositionTable({
               <div className="mt-3 flex items-center justify-between">
                 <div>
                   <div className="label">P&L</div>
-                  <div className={`num text-lg font-semibold ${pnlClass(p.pnl)}`}>{formatSignedUsd(p.pnl)}</div>
+                  <div className="text-lg"><PnlValue value={p.pnl} /></div>
                 </div>
                 {exerciseButton(p, "px-4 py-2.5")}
               </div>
