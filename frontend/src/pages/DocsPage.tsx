@@ -27,8 +27,8 @@ const TOC = [
 
 export function DocsPage() {
   return (
-    <div className="mx-auto grid max-w-7xl gap-10 px-4 py-10 sm:px-6 lg:grid-cols-[200px_1fr]">
-      <aside className="hidden lg:block">
+    <div className="mx-auto grid max-w-7xl gap-10 px-4 py-10 sm:px-6 xl:grid-cols-[200px_1fr]">
+      <aside className="hidden xl:block">
         <nav className="sticky top-24 space-y-1 text-sm">
           <div className="label mb-2">Docs</div>
           {TOC.map(([id, label]) => (

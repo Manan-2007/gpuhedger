@@ -236,7 +236,14 @@
 
 /* Recharts tweaks */
 .recharts-cartesian-axis-tick-value {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
   font-variant-numeric: tabular-nums;
+}
+.recharts-reference-line text {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  letter-spacing: 0.04em;
 }
 .recharts-tooltip-cursor {
   stroke: var(--color-line-2);

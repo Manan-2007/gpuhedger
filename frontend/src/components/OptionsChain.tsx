@@ -265,7 +265,7 @@ export function ExpiryTabs({ groups, value, onChange }: { groups: ExpiryGroup[];
             }`}
           >
             <div className="num text-sm font-semibold">{formatDate(g.expiration).replace(/, \d{4}$/, "")}</div>
-            <div className="num text-[10px] uppercase tracking-wider opacity-80">
+            <div className="num font-mono text-[10px] uppercase tracking-[0.08em] opacity-80">
               {formatTenor(g.expiration)} · {g.count} series
             </div>
           </button>

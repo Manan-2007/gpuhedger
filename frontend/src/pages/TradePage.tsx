@@ -57,7 +57,7 @@ export function TradePage() {
   const oracleReady = spot !== undefined && volatility !== undefined;
 
   return (
-    <div className="mx-auto max-w-7xl px-4 py-10 pb-28 sm:px-6 lg:pb-10">
+    <div className="mx-auto max-w-7xl px-4 py-10 pb-28 sm:px-6 xl:pb-10">
       <SectionHeader eyebrow="Trade" title="Buy compute protection">
         <p className="max-w-sm text-sm text-muted">Every order is a real transaction on Monad, settling in about a second.</p>
       </SectionHeader>
@@ -67,12 +67,12 @@ export function TradePage() {
       ) : isError ? (
         <ErrorNote>Couldn't load option series from the chain. Check your RPC connection and refresh.</ErrorNote>
       ) : isLoading ? (
-        <div className="grid gap-6 lg:grid-cols-[1fr_400px]">
+        <div className="grid gap-6 xl:grid-cols-[1fr_400px]">
           <Skeleton className="h-96" />
           <Skeleton className="h-96" />
         </div>
       ) : (
-        <div className="grid gap-6 lg:grid-cols-[1fr_400px]">
+        <div className="grid gap-6 xl:grid-cols-[1fr_400px]">
           <div className="min-w-0 space-y-6">
             <OptionSelector series={live} selection={selection} onChange={onChange} prices={priceMap} />
             {selected && !oracleReady ? (
@@ -106,7 +106,7 @@ export function TradePage() {
               </div>
             ) : null}
           </div>
-          <div className="lg:sticky lg:top-20 lg:self-start">
+          <div className="xl:sticky xl:top-20 xl:self-start">
             {selected && oracleReady ? (
               <TradePanel key={selected.id} series={selected} spot={spot} volatility={volatility} contracts={contracts} onContractsChange={setContracts} />
             ) : selected ? null : (

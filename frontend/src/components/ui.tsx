@@ -6,18 +6,24 @@ import { formatDuration, formatSignedUsd, shortAddress, shortHash, timeAgo } fro
 import { useNow } from "../hooks/useNow";
 import { Card, Stat } from "./primitives";
 
-/** Mark: a GPU die carrying a capped payoff curve (flat, then protected, then capped): the product in one glyph. */
+/** Mark "G-stack": isometric slabs stacked into a G. Faces derive from the lime token (top lighter, side darker). */
 export function LogoMark({ size = 28, className = "" }: { size?: number; className?: string }) {
+  const top = "color-mix(in oklab, var(--color-primary) 75%, white)";
+  const left = "var(--color-primary)";
+  const right = "color-mix(in oklab, var(--color-primary) 65%, black)";
   return (
     <svg width={size} height={size} viewBox="0 0 32 32" aria-hidden className={className}>
-      <path
-        d="M11 2v3M16 2v3M21 2v3M11 27v3M16 27v3M21 27v3M2 11h3M2 16h3M2 21h3M27 11h3M27 16h3M27 21h3"
-        stroke="var(--color-primary)"
-        strokeWidth="2"
-        strokeLinecap="round"
-      />
-      <rect x="5" y="5" width="22" height="22" rx="5" fill="var(--color-primary)" />
-      <path d="M9 20H14L18.5 12.5H23" fill="none" stroke="var(--color-primary-ink)" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M5 24.5h17l4-2.5H9Z" style={{ fill: top }} opacity=".9" />
+      <path d="M5 24.5h17v3H5Z" style={{ fill: right }} />
+      <path d="M22 24.5l4-2.5v3l-4 2.5Z" style={{ fill: right }} opacity=".7" />
+      <path d="M5 10.5h5v14H5Z" style={{ fill: left }} />
+      <path d="M10 10.5l4-2.5v14l-4 2.5Z" style={{ fill: right }} />
+      <path d="M15 16.5h11l-4 2.5H11Z" style={{ fill: top }} opacity=".9" />
+      <path d="M22 19h4v-2.5l-4 2.5Z" style={{ fill: right }} />
+      <path d="M22 19h4v6.5h-4Z" style={{ fill: left }} />
+      <path d="M9 4.5h17l-4 2.5H5Z" style={{ fill: top }} />
+      <path d="M5 7h17v3.5H5Z" style={{ fill: left }} />
+      <path d="M22 7l4-2.5V8l-4 2.5Z" style={{ fill: right }} />
     </svg>
   );
 }
@@ -26,7 +32,7 @@ export function Logo({ className = "" }: { className?: string }) {
   return (
     <Link to="/" className={`flex items-center gap-2.5 ${className}`} aria-label="GpuHedger home">
       <LogoMark />
-      <span className="font-heading text-[18px] font-extrabold tracking-[-0.02em] text-fg">GpuHedger</span>
+      <span className="font-heading text-[18px] font-bold tracking-[-0.03em] text-fg">GpuHedger</span>
     </Link>
   );
 }

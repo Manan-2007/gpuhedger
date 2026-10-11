@@ -71,9 +71,9 @@ export function FuturesPage() {
                     <span className="num text-xs text-muted">{formatTenor(m.expiration)}</span>
                   </div>
                   <div className="num mt-3 grid grid-cols-3 gap-2 border-t border-line pt-3 text-xs">
-                    <div><div className="text-[10px] uppercase text-dim">Forward</div><div className="text-sm font-semibold">{formatPrice(m.forwardPrice)}</div></div>
-                    <div><div className="text-[10px] uppercase text-dim">Spot</div><div className="text-sm">{spot !== undefined ? formatPrice(spot) : "—"}</div></div>
-                    <div><div className="text-[10px] uppercase text-dim">Basis</div><div className="text-sm">{basis === undefined ? "—" : `${basis >= 0 ? "+" : "−"}${Math.abs(basis).toFixed(1)}%`}</div></div>
+                    <div><div className="label text-[10px] text-dim">Forward</div><div className="text-sm font-semibold">{formatPrice(m.forwardPrice)}</div></div>
+                    <div><div className="label text-[10px] text-dim">Spot</div><div className="text-sm">{spot !== undefined ? formatPrice(spot) : "—"}</div></div>
+                    <div><div className="label text-[10px] text-dim">Basis</div><div className="text-sm">{basis === undefined ? "—" : `${basis >= 0 ? "+" : "−"}${Math.abs(basis).toFixed(1)}%`}</div></div>
                   </div>
                   <div className="mt-2 text-[11px] text-dim">
                     OI {formatNumber(m.longContracts)} long / {formatNumber(m.shortContracts)} short · band ±{formatPrice(m.band)}
@@ -156,7 +156,7 @@ function FuturesTrade({ market: m, spot }: { market: FuturesMarket; spot: number
   const state = last === "open" ? tx.state : usdcTx.state;
 
   return (
-    <div className="mt-6 grid gap-6 lg:grid-cols-[1fr_380px]">
+    <div className="mt-6 grid gap-6 xl:grid-cols-[1fr_380px]">
       <div className="panel min-w-0 p-4 sm:p-5">
         <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
           <h2 className="font-semibold">{m.gpu} future · forward {formatPrice(m.forwardPrice)} · {formatTenor(m.expiration)}</h2>
@@ -232,12 +232,12 @@ function FuturesTrade({ market: m, spot }: { market: FuturesMarket; spot: number
         </div>
         <dl className="mt-3 grid grid-cols-2 gap-px overflow-hidden rounded-lg border border-line bg-line">
           <div className="bg-bg-deep px-3 py-2.5">
-            <dt className="text-[11px] text-muted">Maximum loss</dt>
+            <dt className="label text-[10px]">Maximum loss</dt>
             <dd className="num mt-0.5 text-base font-semibold text-neg">−{formatUsd(margin)}</dd>
             <dd className="text-[11px] text-dim">if {m.gpu} moves {formatPrice(m.band)} against you</dd>
           </div>
           <div className="bg-bg-deep px-3 py-2.5">
-            <dt className="text-[11px] text-muted">Maximum gain</dt>
+            <dt className="label text-[10px]">Maximum gain</dt>
             <dd className="num mt-0.5 text-base font-semibold text-pos">up to +{formatUsd(margin)}</dd>
             <dd className="text-[11px] text-dim">capped at the band, fully funded</dd>
           </div>

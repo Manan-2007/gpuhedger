@@ -107,7 +107,7 @@ function Portfolio() {
       </SectionHeader>
       {prices.some((p) => p.unavailable) && <OracleUnavailable className="mb-6" />}
 
-      <div className="grid gap-4 lg:grid-cols-[1fr_340px]">
+      <div className="grid gap-4 xl:grid-cols-[1fr_340px]">
         <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
           <StatCard label="Portfolio value" value={formatUsd(summary.portfolioValue)} sub="Open positions · model est." />
           <StatCard label="Total P&L" value={<PnlValue value={summary.totalPnl} />} sub={`Unrealized ${formatSignedUsd(summary.unrealized)} (model est.)`} />
@@ -195,7 +195,7 @@ function Portfolio() {
         ) : (
           tab === "OPEN" ? (
             <>
-              <div className="grid gap-4 lg:grid-cols-2">
+              <div className="grid gap-4 xl:grid-cols-2">
                 {shown.map((p) => (
                   <PositionCard
                     key={p.key}
