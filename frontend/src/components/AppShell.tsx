@@ -183,7 +183,7 @@ export function AppShell({ children }: { children: ReactNode }) {
           </div>
         </header>
         <StatusBanners />
-        <main className="flex-1">{children}</main>
+        <main id="main" className="flex-1">{children}</main>
         <Footer />
       </div>
     </div>

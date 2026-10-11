@@ -271,7 +271,7 @@ function Playground() {
     <div className="panel p-4 sm:p-5">
       <div className="mb-4 flex gap-1 rounded-lg border border-line bg-bg p-0.5 sm:w-fit">
         {(["CALL", "PUT"] as OptionKind[]).map((k) => (
-          <button key={k} onClick={() => setKind(k)} className={`seg flex-1 ${kind === k ? (k === "CALL" ? "bg-call/15 text-call" : "bg-put/15 text-put") : "text-muted"}`}>
+          <button key={k} onClick={() => setKind(k)} className={`seg flex-1 ${kind === k ? (k === "CALL" ? "bg-card-2 text-call shadow-[inset_0_-2px_0_var(--color-call)]" : "bg-card-2 text-put shadow-[inset_0_-2px_0_var(--color-put)]") : "text-muted"}`}>
             {k}
           </button>
         ))}

@@ -1,5 +1,5 @@
-import { Link } from "react-router-dom";
 import { EmptyState } from "../components/ui";
+import { ButtonLink } from "../components/primitives";
 
 export function NotFoundPage() {
   return (
@@ -7,7 +7,7 @@ export function NotFoundPage() {
       <EmptyState
         title="Page not found"
         body="This route doesn't exist. The compute markets are this way."
-        action={<Link to="/markets" className="btn-primary">EXPLORE MARKETS</Link>}
+        action={<ButtonLink to="/markets" arrow>Explore markets</ButtonLink>}
       />
     </div>
   );

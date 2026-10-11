@@ -27,6 +27,7 @@ const ActivityPage = lazy(() => import("./pages/ActivityPage").then((m) => ({ de
 function PageFallback() {
   return (
     <div className="mx-auto max-w-7xl space-y-4 px-4 py-10 sm:px-6" aria-busy="true">
+      <div className="label text-dim">Loading…</div>
       <Skeleton className="h-9 w-64" />
       <Skeleton className="h-72 w-full" />
     </div>
@@ -93,13 +94,19 @@ export function App() {
   const landing = pathname === "/";
   return (
     <>
+      <a
+        href="#main"
+        className="sr-only focus:not-sr-only focus:fixed focus:left-3 focus:top-3 focus:z-[60] focus:rounded-[2px] focus:bg-primary focus:px-3 focus:py-2 focus:font-mono focus:text-xs focus:uppercase focus:text-primary-ink"
+      >
+        Skip to content
+      </a>
       <ScrollToTop />
       <MockAutoConnect />
       <ChainClockSync />
       {landing ? (
         <div className="flex min-h-screen flex-col">
           <Navbar />
-          <main className="flex-1">
+          <main id="main" className="flex-1">
             <AppRoutes />
           </main>
           <Footer />

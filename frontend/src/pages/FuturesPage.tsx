@@ -29,14 +29,14 @@ export function FuturesPage() {
       </SectionHeader>
       <div className="mb-6 grid gap-3 md:grid-cols-2">
         <div className="panel p-4 text-sm">
-          <span className="chip border-call/35 bg-call/10 text-call">LONG</span>
+          <span className="chip border-call/35 text-call">LONG</span>
           <p className="mt-2 text-muted">
             <b className="text-fg">For AI startups.</b> Lock in what you'll pay per GPU-hour. If the price rises above the forward,
             the gain offsets your higher compute bill; if it falls, you pay the difference — your net cost stays near the forward.
           </p>
         </div>
         <div className="panel p-4 text-sm">
-          <span className="chip border-put/35 bg-put/10 text-put">SHORT</span>
+          <span className="chip border-put/35 text-put">SHORT</span>
           <p className="mt-2 text-muted">
             <b className="text-fg">For GPU providers.</b> Lock in what you'll earn per GPU-hour. If rental prices fall, the short pays
             you the difference.
@@ -206,7 +206,7 @@ function FuturesTrade({ market: m, spot }: { market: FuturesMarket; spot: number
       <div className="panel-solid self-start p-4 sm:p-5" id="trade-panel">
         <div className="grid grid-cols-2 gap-1 rounded-lg border border-line bg-bg-deep p-0.5">
           {(["LONG", "SHORT"] as FuturesSide[]).map((s) => (
-            <button key={s} onClick={() => setSide(s)} className={`seg py-2 ${side === s ? (s === "LONG" ? "bg-call/15 text-call" : "bg-put/15 text-put") : "text-muted"}`}>
+            <button key={s} onClick={() => setSide(s)} className={`seg py-2 ${side === s ? (s === "LONG" ? "bg-card-2 text-call shadow-[inset_0_-2px_0_var(--color-call)]" : "bg-card-2 text-put shadow-[inset_0_-2px_0_var(--color-put)]") : "text-muted"}`}>
               {s}
             </button>
           ))}

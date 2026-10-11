@@ -273,7 +273,7 @@ function Recommendation({ best, role, gpu, hours, spot, stress, needBy }: {
             {best.series ? (
               <OptionTypeBadge kind={best.series.kind} />
             ) : (
-              <span className={`chip ${role === "BUYER" ? "border-call/35 bg-call/10 text-call" : "border-put/35 bg-put/10 text-put"}`}>{role === "BUYER" ? "LONG" : "SHORT"}</span>
+              <span className={`chip ${role === "BUYER" ? "border-call/35 text-call" : "border-put/35 text-put"}`}>{role === "BUYER" ? "LONG" : "SHORT"}</span>
             )}
             {gpu} {describe(best, role)}
           </div>

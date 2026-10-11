@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import { Link } from "react-router-dom";
+import { MiniCluster } from "./art/scenes";
 
 /*
  * Design primitives for the Monad-style language: flat hairline cards, mono uppercase labels,
@@ -59,9 +60,9 @@ const TONE: Record<Tone, string> = {
   neutral: "border-line-2 text-muted",
   lime: "border-primary/45 text-primary",
   teal: "border-pos/45 bg-pos/10 text-pos",
-  red: "border-neg/45 bg-neg/10 text-neg",
-  blue: "border-secondary/45 bg-secondary/10 text-secondary",
-  purple: "border-put/45 bg-put/10 text-put",
+  red: "border-neg/45 text-neg",
+  blue: "border-secondary/45 text-secondary",
+  purple: "border-put/45 text-put",
   amber: "border-warn/45 bg-warn/10 text-warn",
 };
 
@@ -123,14 +124,7 @@ export function SectionHeader({ eyebrow, title, description, children }: { eyebr
 export function EmptyState({ title, body, action, art }: { title: string; body?: ReactNode; action?: ReactNode; art?: ReactNode }) {
   return (
     <Card className="flex flex-col items-center justify-center px-6 py-14 text-center">
-      {art ?? (
-        <div className="mb-4 grid h-11 w-11 place-items-center rounded-[4px] border border-line-2 text-dim" aria-hidden>
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6">
-            <path d="M12 3l8 4.5v9L12 21l-8-4.5v-9L12 3z" />
-            <path d="M12 12l8-4.5M12 12v9M12 12L4 7.5" />
-          </svg>
-        </div>
-      )}
+      {art ?? <MiniCluster className="mb-5 h-20 w-auto" />}
       <h3 className="font-heading text-lg font-semibold">{title}</h3>
       {body && <p className="mt-1.5 max-w-md text-sm text-muted">{body}</p>}
       {action && <div className="mt-5">{action}</div>}

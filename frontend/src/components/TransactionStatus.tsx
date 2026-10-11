@@ -92,7 +92,7 @@ export function TransactionStatus({
     <div
       role="status"
       aria-live="polite"
-      className={`rounded-[4px] border p-4 ${failed ? "border-neg/45 bg-neg/[0.06]" : done ? "border-pos/45 bg-pos/[0.06]" : "border-secondary/35 bg-secondary/[0.04]"}`}
+      className={`rounded-[4px] border p-4 ${failed ? "border-neg/60 bg-card" : done ? "border-pos/45 bg-pos/[0.06]" : "border-secondary/35 bg-secondary/[0.04]"}`}
     >
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">

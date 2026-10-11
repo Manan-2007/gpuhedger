@@ -40,7 +40,7 @@ export function Logo({ className = "" }: { className?: string }) {
 export function OptionTypeBadge({ kind, className = "" }: { kind: OptionKind; className?: string }) {
   return (
     <span
-      className={`chip ${kind === "CALL" ? "border-call/35 bg-call/10 text-call" : "border-put/35 bg-put/10 text-put"} ${className}`}
+      className={`chip ${kind === "CALL" ? "border-call/35 text-call" : "border-put/35 text-put"} ${className}`}
     >
       {kind}
     </span>
@@ -60,7 +60,7 @@ export function SimulatedTag({ label = "Simulated", className = "" }: { label?: 
 
 export function OnchainTag({ label = "Onchain", className = "" }: { label?: string; className?: string }) {
   return (
-    <span className={`chip border-secondary/30 bg-secondary/10 text-secondary ${className}`} title="Read live from Monad smart contracts">
+    <span className={`chip border-secondary/30 text-secondary ${className}`} title="Read live from Monad smart contracts">
       <span className="pulse-dot h-1.5 w-1.5 rounded-full bg-secondary" />
       {label}
     </span>
@@ -145,8 +145,9 @@ export { EmptyState } from "./primitives";
 
 export function ErrorNote({ children }: { children: ReactNode }) {
   return (
-    <div role="alert" className="rounded-lg border border-neg/30 bg-neg/10 px-3 py-2.5 text-sm text-neg">
-      {children}
+    <div role="alert" className="rounded-[4px] border border-neg/60 bg-card px-3.5 py-3 text-sm">
+      <div className="label mb-1 text-[10px] text-neg">Error</div>
+      <div className="text-fg">{children}</div>
     </div>
   );
 }
@@ -155,7 +156,7 @@ export function ErrorNote({ children }: { children: ReactNode }) {
 export function OracleUnavailable({ gpu, className = "" }: { gpu?: string; className?: string }) {
   return (
     <div role="alert" className={`rounded-lg border border-warn/40 bg-warn/[0.06] px-4 py-3 text-sm ${className}`}>
-      <div className="font-semibold text-warn">Oracle unavailable</div>
+      <div className="label text-warn">Oracle unavailable</div>
       <p className="mt-1 text-muted">
         The {gpu ? `${gpu} ` : ""}price couldn't be read from the ComputeOracle contract, so pricing and trading are paused on this
         screen. Check your connection; it retries automatically every few seconds.
