@@ -45,6 +45,10 @@
   --color-call: #378add;
   --color-put: #a78bfa;
 
+  /* Decorative art only (isometric scenes). Never used to carry financial meaning. */
+  --color-art-1: #12292f;
+  --color-art-2: #22434a;
+
   /* Charts */
   --color-chart-grid: rgba(255, 255, 255, 0.06);
   --color-chart-ref: rgba(255, 255, 255, 0.48);
@@ -209,7 +213,21 @@
   animation: flash-pos 1.2s ease-out;
 }
 
+/* Slow float for decorative isometric cubes. */
+@keyframes iso-float {
+  from {
+    transform: translateY(0);
+  }
+  to {
+    transform: translateY(-6px);
+  }
+}
+.iso-float {
+  animation: iso-float 5s ease-in-out infinite alternate;
+}
+
 @media (prefers-reduced-motion: reduce) {
+  .iso-float,
   .pulse-dot,
   .flash-pos {
     animation: none;

@@ -3,6 +3,7 @@ import { NavLink, useLocation } from "react-router-dom";
 import { activeChain, isLocalChain } from "../lib/chain";
 import { WalletButton } from "./WalletButton";
 import { StatusBanners } from "./StatusBanners";
+import { ButtonLink } from "./primitives";
 import { Logo } from "./ui";
 
 const PRIMARY = [
@@ -119,6 +120,9 @@ export function Navbar() {
               <DemoModeBadge />
             </div>
             <NetworkPill />
+            <ButtonLink to="/markets" arrow className="hidden px-3.5 py-2 md:inline-flex">
+              Launch app
+            </ButtonLink>
             <WalletButton />
             <button
               className="grid h-9 w-9 place-items-center rounded-md border border-line-2 lg:hidden"
