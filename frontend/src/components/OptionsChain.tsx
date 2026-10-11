@@ -65,7 +65,7 @@ export function OptionsChain({ series, spot, gpu }: { series: OptionSeries[]; sp
       <td colSpan={colSpan} className="px-4 py-1.5">
         <div className="flex items-center gap-3">
           <span className="h-px flex-1 bg-secondary/70" />
-          <span className="num rounded-full border border-secondary/40 bg-secondary/10 px-2.5 py-0.5 text-[11px] font-semibold text-secondary">
+          <span className="num rounded-full border border-secondary/50 bg-card px-2.5 py-0.5 text-[11px] font-semibold text-secondary">
             {gpu} oracle {spot !== undefined ? formatPrice(spot) : "—"}
           </span>
           <span className="h-px flex-1 bg-secondary/70" />
@@ -118,7 +118,7 @@ export function OptionsChain({ series, spot, gpu }: { series: OptionSeries[]; sp
             <button
               key={k}
               onClick={() => setMobileSide(k)}
-              className={`seg py-2 ${mobileSide === k ? (k === "CALL" ? "bg-call/15 text-call" : "bg-put/15 text-put") : "text-muted"}`}
+              className={`seg py-2 ${mobileSide === k ? (k === "CALL" ? "bg-card-2 text-call shadow-[inset_0_-2px_0_var(--color-call)]" : "bg-card-2 text-put shadow-[inset_0_-2px_0_var(--color-put)]") : "text-muted"}`}
             >
               {k === "CALL" ? "Calls" : "Puts"}
             </button>
@@ -265,7 +265,7 @@ export function ExpiryTabs({ groups, value, onChange }: { groups: ExpiryGroup[];
             }`}
           >
             <div className="num text-sm font-semibold">{formatDate(g.expiration).replace(/, \d{4}$/, "")}</div>
-            <div className="num text-[10px] uppercase tracking-wider opacity-80">
+            <div className="num font-mono text-[10px] uppercase tracking-[0.08em] opacity-80">
               {formatTenor(g.expiration)} · {g.count} series
             </div>
           </button>

@@ -5,6 +5,7 @@ import { useQuery } from "@tanstack/react-query";
 import { activeChain } from "./lib/chain";
 import { syncChainClock } from "./lib/clock";
 import { Navbar } from "./components/Navbar";
+import { AppShell } from "./components/AppShell";
 import { Footer } from "./components/Footer";
 import { useMockWallet } from "./lib/wagmi";
 import { Skeleton } from "./components/ui";
@@ -26,6 +27,7 @@ const ActivityPage = lazy(() => import("./pages/ActivityPage").then((m) => ({ de
 function PageFallback() {
   return (
     <div className="mx-auto max-w-7xl space-y-4 px-4 py-10 sm:px-6" aria-busy="true">
+      <div className="label text-dim">Loading…</div>
       <Skeleton className="h-9 w-64" />
       <Skeleton className="h-72 w-full" />
     </div>
@@ -65,32 +67,55 @@ function MockAutoConnect() {
   return null;
 }
 
-export function App() {
+function AppRoutes() {
   return (
-    <div className="flex min-h-screen flex-col">
+    <Suspense fallback={<PageFallback />}>
+      <Routes>
+        <Route path="/" element={<LandingPage />} />
+        <Route path="/markets" element={<MarketsPage />} />
+        <Route path="/markets/:id" element={<MarketDetailPage />} />
+        <Route path="/trade" element={<TradePage />} />
+        <Route path="/hedge" element={<HedgePage />} />
+        <Route path="/futures" element={<FuturesPage />} />
+        <Route path="/vault" element={<VaultPage />} />
+        <Route path="/activity" element={<ActivityPage />} />
+        <Route path="/portfolio" element={<PortfolioPage />} />
+        <Route path="/admin" element={<AdminPage />} />
+        <Route path="/docs" element={<DocsPage />} />
+        <Route path="*" element={<NotFoundPage />} />
+      </Routes>
+    </Suspense>
+  );
+}
+
+export function App() {
+  const { pathname } = useLocation();
+  // The landing page is a full-width marketing layout; every app route gets the sidebar shell.
+  const landing = pathname === "/";
+  return (
+    <>
+      <a
+        href="#main"
+        className="sr-only focus:not-sr-only focus:fixed focus:left-3 focus:top-3 focus:z-[60] focus:rounded-[2px] focus:bg-primary focus:px-3 focus:py-2 focus:font-mono focus:text-xs focus:uppercase focus:text-primary-ink"
+      >
+        Skip to content
+      </a>
       <ScrollToTop />
       <MockAutoConnect />
       <ChainClockSync />
-      <Navbar />
-      <main className="flex-1">
-        <Suspense fallback={<PageFallback />}>
-          <Routes>
-            <Route path="/" element={<LandingPage />} />
-            <Route path="/markets" element={<MarketsPage />} />
-            <Route path="/markets/:id" element={<MarketDetailPage />} />
-            <Route path="/trade" element={<TradePage />} />
-            <Route path="/hedge" element={<HedgePage />} />
-            <Route path="/futures" element={<FuturesPage />} />
-            <Route path="/vault" element={<VaultPage />} />
-            <Route path="/activity" element={<ActivityPage />} />
-            <Route path="/portfolio" element={<PortfolioPage />} />
-            <Route path="/admin" element={<AdminPage />} />
-            <Route path="/docs" element={<DocsPage />} />
-            <Route path="*" element={<NotFoundPage />} />
-          </Routes>
-        </Suspense>
-      </main>
-      <Footer />
-    </div>
+      {landing ? (
+        <div className="flex min-h-screen flex-col">
+          <Navbar />
+          <main id="main" className="flex-1">
+            <AppRoutes />
+          </main>
+          <Footer />
+        </div>
+      ) : (
+        <AppShell>
+          <AppRoutes />
+        </AppShell>
+      )}
+    </>
   );
 }

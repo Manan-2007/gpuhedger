@@ -93,7 +93,7 @@ export function PositionTable({
   return (
     <>
       {/* Desktop */}
-      <div className="panel-solid hidden overflow-x-auto lg:block">
+      <div className="panel-solid hidden overflow-x-auto xl:block">
         <table className="w-full min-w-[1000px] text-sm">
           <thead>
             <tr className="border-b border-line text-left">
@@ -144,7 +144,7 @@ export function PositionTable({
       </div>
 
       {/* Mobile / tablet cards */}
-      <div className="grid gap-3 lg:hidden">
+      <div className="grid gap-3 xl:hidden">
         {positions.map((p) => {
           const value = p.status === "OPEN" ? p.estimatedValue : p.status === "EXERCISED" ? p.payout : 0;
           return (

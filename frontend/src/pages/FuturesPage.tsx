@@ -29,14 +29,14 @@ export function FuturesPage() {
       </SectionHeader>
       <div className="mb-6 grid gap-3 md:grid-cols-2">
         <div className="panel p-4 text-sm">
-          <span className="chip border-call/35 bg-call/10 text-call">LONG</span>
+          <span className="chip border-call/35 text-call">LONG</span>
           <p className="mt-2 text-muted">
             <b className="text-fg">For AI startups.</b> Lock in what you'll pay per GPU-hour. If the price rises above the forward,
             the gain offsets your higher compute bill; if it falls, you pay the difference — your net cost stays near the forward.
           </p>
         </div>
         <div className="panel p-4 text-sm">
-          <span className="chip border-put/35 bg-put/10 text-put">SHORT</span>
+          <span className="chip border-put/35 text-put">SHORT</span>
           <p className="mt-2 text-muted">
             <b className="text-fg">For GPU providers.</b> Lock in what you'll earn per GPU-hour. If rental prices fall, the short pays
             you the difference.
@@ -71,9 +71,9 @@ export function FuturesPage() {
                     <span className="num text-xs text-muted">{formatTenor(m.expiration)}</span>
                   </div>
                   <div className="num mt-3 grid grid-cols-3 gap-2 border-t border-line pt-3 text-xs">
-                    <div><div className="text-[10px] uppercase text-dim">Forward</div><div className="text-sm font-semibold">{formatPrice(m.forwardPrice)}</div></div>
-                    <div><div className="text-[10px] uppercase text-dim">Spot</div><div className="text-sm">{spot !== undefined ? formatPrice(spot) : "—"}</div></div>
-                    <div><div className="text-[10px] uppercase text-dim">Basis</div><div className="text-sm">{basis === undefined ? "—" : `${basis >= 0 ? "+" : "−"}${Math.abs(basis).toFixed(1)}%`}</div></div>
+                    <div><div className="label text-[10px] text-dim">Forward</div><div className="text-sm font-semibold">{formatPrice(m.forwardPrice)}</div></div>
+                    <div><div className="label text-[10px] text-dim">Spot</div><div className="text-sm">{spot !== undefined ? formatPrice(spot) : "—"}</div></div>
+                    <div><div className="label text-[10px] text-dim">Basis</div><div className="text-sm">{basis === undefined ? "—" : `${basis >= 0 ? "+" : "−"}${Math.abs(basis).toFixed(1)}%`}</div></div>
                   </div>
                   <div className="mt-2 text-[11px] text-dim">
                     OI {formatNumber(m.longContracts)} long / {formatNumber(m.shortContracts)} short · band ±{formatPrice(m.band)}
@@ -156,7 +156,7 @@ function FuturesTrade({ market: m, spot }: { market: FuturesMarket; spot: number
   const state = last === "open" ? tx.state : usdcTx.state;
 
   return (
-    <div className="mt-6 grid gap-6 lg:grid-cols-[1fr_380px]">
+    <div className="mt-6 grid gap-6 xl:grid-cols-[1fr_380px]">
       <div className="panel min-w-0 p-4 sm:p-5">
         <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
           <h2 className="font-semibold">{m.gpu} future · forward {formatPrice(m.forwardPrice)} · {formatTenor(m.expiration)}</h2>
@@ -206,7 +206,7 @@ function FuturesTrade({ market: m, spot }: { market: FuturesMarket; spot: number
       <div className="panel-solid self-start p-4 sm:p-5" id="trade-panel">
         <div className="grid grid-cols-2 gap-1 rounded-lg border border-line bg-bg-deep p-0.5">
           {(["LONG", "SHORT"] as FuturesSide[]).map((s) => (
-            <button key={s} onClick={() => setSide(s)} className={`seg py-2 ${side === s ? (s === "LONG" ? "bg-call/15 text-call" : "bg-put/15 text-put") : "text-muted"}`}>
+            <button key={s} onClick={() => setSide(s)} className={`seg py-2 ${side === s ? (s === "LONG" ? "bg-card-2 text-call shadow-[inset_0_-2px_0_var(--color-call)]" : "bg-card-2 text-put shadow-[inset_0_-2px_0_var(--color-put)]") : "text-muted"}`}>
               {s}
             </button>
           ))}
@@ -232,12 +232,12 @@ function FuturesTrade({ market: m, spot }: { market: FuturesMarket; spot: number
         </div>
         <dl className="mt-3 grid grid-cols-2 gap-px overflow-hidden rounded-lg border border-line bg-line">
           <div className="bg-bg-deep px-3 py-2.5">
-            <dt className="text-[11px] text-muted">Maximum loss</dt>
+            <dt className="label text-[10px]">Maximum loss</dt>
             <dd className="num mt-0.5 text-base font-semibold text-neg">−{formatUsd(margin)}</dd>
             <dd className="text-[11px] text-dim">if {m.gpu} moves {formatPrice(m.band)} against you</dd>
           </div>
           <div className="bg-bg-deep px-3 py-2.5">
-            <dt className="text-[11px] text-muted">Maximum gain</dt>
+            <dt className="label text-[10px]">Maximum gain</dt>
             <dd className="num mt-0.5 text-base font-semibold text-pos">up to +{formatUsd(margin)}</dd>
             <dd className="text-[11px] text-dim">capped at the band, fully funded</dd>
           </div>

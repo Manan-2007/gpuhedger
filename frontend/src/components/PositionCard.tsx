@@ -38,19 +38,19 @@ export function PositionCard({
   let action: React.ReactNode;
   if (claimable) {
     action = (
-      <button onClick={() => onClaim(p)} disabled={disabled || p.claimValue <= 0} className="btn-primary w-full py-2.5 sm:w-auto">
+      <button onClick={() => onClaim(p)} disabled={disabled || p.claimValue <= 0} className="btn-primary w-full whitespace-nowrap py-2.5">
         {busy && <Spinner />} CLAIM {formatUsd(p.claimValue)}
       </button>
     );
   } else if (p.canExercise) {
     action = (
-      <button onClick={() => onExercise(p)} disabled={disabled} className="btn-primary w-full py-2.5 sm:w-auto">
+      <button onClick={() => onExercise(p)} disabled={disabled} className="btn-primary w-full whitespace-nowrap py-2.5">
         {busy && <Spinner />} EXERCISE · {formatUsd(p.exerciseValue)}
       </button>
     );
   } else {
     action = (
-      <button disabled className="btn-secondary w-full py-2.5 sm:w-auto" title="Out of the money: nothing to exercise yet">
+      <button disabled className="btn-secondary w-full whitespace-nowrap py-2.5" title="Out of the money: nothing to exercise yet">
         OUT OF THE MONEY
       </button>
     );
@@ -80,17 +80,17 @@ export function PositionCard({
       </div>
 
       {/* Value */}
-      <div className="mt-4 grid grid-cols-2 gap-3 rounded-lg border border-line bg-bg-deep/50 p-3">
+      <div className="mt-4 grid grid-cols-2 gap-3 rounded-[4px] border border-line bg-bg p-3.5">
         <div>
-          <div className="text-[11px] text-muted">{claimable ? "P&L at expiry" : "Unrealized P&L*"}</div>
-          <div className="mt-0.5 text-xl">
+          <div className="label text-[10px]">{claimable ? "P&L at expiry" : "Unrealized P&L*"}</div>
+          <div className="mt-1 font-heading text-2xl tracking-tight">
             <PnlValue value={p.pnl} />
           </div>
           <div className="num text-[11px] text-dim">{formatPct(pnlPct, 0)} on {formatUsd(p.premiumPaid)} premium</div>
         </div>
         <div className="text-right">
-          <div className="text-[11px] text-muted">{claimable ? "Claimable payout" : "Exercise value now"}</div>
-          <div className={`num mt-0.5 text-xl font-semibold ${(claimable ? p.claimValue : p.exerciseValue) > 0 ? "text-pos" : "text-muted"}`}>
+          <div className="label text-[10px]">{claimable ? "Claimable payout" : "Exercise value now"}</div>
+          <div className={`num mt-1 font-heading text-2xl font-semibold tracking-tight ${(claimable ? p.claimValue : p.exerciseValue) > 0 ? "text-pos" : "text-muted"}`}>
             {formatUsd(claimable ? p.claimValue : p.exerciseValue)}
           </div>
           <div className="text-[11px] text-dim">
@@ -112,9 +112,9 @@ export function PositionCard({
 
       {/* Actions */}
       <div className="mt-auto pt-4">
-        <div className="flex flex-col gap-2 border-t border-line pt-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex flex-col gap-3 border-t border-line pt-4">
           {action}
-          <div className="flex items-center justify-center gap-4 text-xs sm:justify-end">
+          <div className="flex items-center justify-between gap-4 font-mono text-[11px] uppercase tracking-[0.06em]">
             <button onClick={() => setShowTransfer((v) => !v)} className="text-muted hover:text-fg" aria-expanded={showTransfer}>
               Transfer NFT #{p.tokenId.toString()}
             </button>
@@ -132,7 +132,7 @@ export function PositionCard({
 function Fact({ k, v, sub }: { k: string; v: string; sub?: string }) {
   return (
     <div>
-      <dt className="text-[11px] text-muted">{k}</dt>
+      <dt className="label text-[10px]">{k}</dt>
       <dd className="num font-semibold">{v}</dd>
       {sub && <dd className="text-[10px] text-dim">{sub}</dd>}
     </div>

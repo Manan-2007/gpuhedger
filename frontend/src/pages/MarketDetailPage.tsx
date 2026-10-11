@@ -88,14 +88,14 @@ function DetailBody({ series: s, contracts, setContracts, spot, volatility, upda
   ];
 
   return (
-    <div className="mx-auto max-w-7xl px-4 py-8 pb-28 sm:px-6 lg:pb-8">
+    <div className="mx-auto max-w-7xl px-4 py-8 pb-28 sm:px-6 xl:pb-8">
       <Link to="/markets" className="text-sm text-muted hover:text-fg">← All markets</Link>
 
       <div className="mt-4">
         <SeriesHeader series={s} spot={spot} updatedAt={updatedAt} as="h1" />
       </div>
 
-      <dl className="panel-solid mt-6 grid grid-cols-2 divide-line sm:grid-cols-4 lg:grid-cols-7 lg:divide-x">
+      <dl className="panel-solid mt-6 grid grid-cols-2 divide-line sm:grid-cols-4 xl:grid-cols-7 xl:divide-x">
         {stats.map(({ k, v, hint, simulated }) => (
           <div key={k} className="px-4 py-3" title={hint}>
             <dt className="label flex items-center gap-1 text-[10px]">
@@ -107,7 +107,7 @@ function DetailBody({ series: s, contracts, setContracts, spot, volatility, upda
         ))}
       </dl>
 
-      <div className="mt-6 grid gap-6 lg:grid-cols-[1fr_400px]">
+      <div className="mt-6 grid gap-6 xl:grid-cols-[1fr_400px]">
         <div className="min-w-0 space-y-6">
           <div className="panel p-4 sm:p-5">
             <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
@@ -174,7 +174,7 @@ function DetailBody({ series: s, contracts, setContracts, spot, volatility, upda
           <p className="text-xs text-dim">*Bid is indicative (simulated); secondary trading is on the roadmap. The ask is the executable onchain premium.</p>
         </div>
 
-        <div className="lg:sticky lg:top-20 lg:self-start">
+        <div className="xl:sticky xl:top-20 xl:self-start">
           <TradePanel series={s} spot={spot} volatility={volatility} contracts={contracts} onContractsChange={setContracts} />
         </div>
       </div>

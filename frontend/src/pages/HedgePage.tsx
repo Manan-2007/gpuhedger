@@ -72,7 +72,7 @@ export function HedgePage() {
         </p>
       </SectionHeader>
 
-      <div className="grid gap-6 lg:grid-cols-[360px_1fr]">
+      <div className="grid gap-6 xl:grid-cols-[360px_1fr]">
         {/* Inputs */}
         <div className="panel space-y-5 self-start p-4 sm:p-5">
           <div className="grid grid-cols-2 gap-1 rounded-lg border border-line bg-bg-deep p-0.5">
@@ -273,7 +273,7 @@ function Recommendation({ best, role, gpu, hours, spot, stress, needBy }: {
             {best.series ? (
               <OptionTypeBadge kind={best.series.kind} />
             ) : (
-              <span className={`chip ${role === "BUYER" ? "border-call/35 bg-call/10 text-call" : "border-put/35 bg-put/10 text-put"}`}>{role === "BUYER" ? "LONG" : "SHORT"}</span>
+              <span className={`chip ${role === "BUYER" ? "border-call/35 text-call" : "border-put/35 text-put"}`}>{role === "BUYER" ? "LONG" : "SHORT"}</span>
             )}
             {gpu} {describe(best, role)}
           </div>

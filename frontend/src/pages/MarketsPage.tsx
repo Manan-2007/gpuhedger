@@ -229,7 +229,7 @@ export function MarketsPage() {
 function Stat({ k, v, cls = "" }: { k: string; v: string; cls?: string }) {
   return (
     <div>
-      <div className="text-[10px] uppercase tracking-wider text-dim">{k}</div>
+      <div className="label text-[10px] text-dim">{k}</div>
       <div className={`mt-0.5 ${cls}`}>{v}</div>
     </div>
   );

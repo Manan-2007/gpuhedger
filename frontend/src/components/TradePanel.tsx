@@ -179,7 +179,7 @@ export function TradePanel({ series, spot, volatility, contracts, onContractsCha
               {formatPrice(series.premium)}/GPU-h × {formatNumber(summary.gpuHours)} GPU-h
             </div>
           </div>
-          <div className="num text-3xl font-semibold text-fg">{formatUsd(summary.totalPremium)}</div>
+          <div className="num font-heading text-4xl font-semibold tracking-tight text-fg">{formatUsd(summary.totalPremium)}</div>
         </div>
         <div className="mt-1.5 flex items-center justify-between text-xs text-dim">
           <span title="Black-Scholes model price for comparison only. The executable price is the onchain premium.">
@@ -229,7 +229,7 @@ export function TradePanel({ series, spot, volatility, contracts, onContractsCha
 
         {/* Two-step flow, explained */}
         {ready && accepted && (needsApproval || approvedHere) && (
-          <ol className="mt-4 space-y-1.5 text-xs" aria-label="Purchase steps">
+          <ol className="mt-4 divide-y divide-line border-y border-line" aria-label="Purchase steps">
             <StepRow n={1} done={!needsApproval} current={needsApproval}>
               Approve exactly {formatUsd(summary.totalPremium)} USDC for this series
             </StepRow>
@@ -294,27 +294,30 @@ export function TradePanel({ series, spot, volatility, contracts, onContractsCha
 
 function RiskCell({ label, sub, children }: { label: string; sub: string; children: React.ReactNode }) {
   return (
-    <div className="bg-bg-deep px-3 py-2.5">
-      <dt className="text-[11px] text-muted">{label}</dt>
-      <dd className="num mt-0.5 text-base font-semibold">{children}</dd>
+    <div className="bg-bg px-3 py-3">
+      <dt className="label text-[10px]">{label}</dt>
+      <dd className="num mt-1 font-heading text-lg font-semibold tracking-tight">{children}</dd>
       <dd className="mt-0.5 text-[11px] leading-snug text-dim">{sub}</dd>
     </div>
   );
 }
 
+/** Metropolis-style checklist row: check-circle, label, right-aligned mono state. */
 function StepRow({ n, done, current, children }: { n: number; done: boolean; current: boolean; children: React.ReactNode }) {
   return (
-    <li className={`flex items-center gap-2 ${current ? "text-fg" : "text-muted"}`} aria-current={current ? "step" : undefined}>
-      <span
-        className={`num grid h-5 w-5 shrink-0 place-items-center rounded-full border text-[10px] font-semibold ${
-          done ? "border-pos/50 bg-pos/15 text-pos" : current ? "border-line-3 text-fg" : "border-line text-dim"
-        }`}
-      >
-        {done ? "✓" : n}
-      </span>
-      <span>
-        <span className="text-dim">Step {n} of 2 · </span>
-        {children}
+    <li className="flex items-center gap-3 py-2" aria-current={current ? "step" : undefined}>
+      {done ? (
+        <span className="grid h-4 w-4 shrink-0 place-items-center rounded-full bg-pos text-bg" aria-hidden>
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M5 12.5l4.5 4.5L19 7.5" />
+          </svg>
+        </span>
+      ) : (
+        <span className={`h-4 w-4 shrink-0 rounded-full border-[1.5px] ${current ? "border-fg" : "border-line-3"}`} aria-hidden />
+      )}
+      <span className={`min-w-0 flex-1 text-xs ${done ? "text-dim line-through" : current ? "text-fg" : "text-muted"}`}>{children}</span>
+      <span className={`shrink-0 font-mono text-[10px] uppercase tracking-[0.08em] ${done ? "text-pos" : current ? "text-fg" : "text-dim"}`}>
+        {done ? "Done" : `Step ${n} of 2`}
       </span>
     </li>
   );

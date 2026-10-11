@@ -36,7 +36,7 @@ export function VaultPage() {
         with pooled liquidity; LPs take the other side of the hedge, so large GPU price moves can reduce vault value.
       </p>
 
-      <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-6">
+      <div className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-6">
         <StatCard label="Vault value (NAV)" value={formatUsd(vault.tvl, 0)} />
         <StatCard label="Share price" value={`$${vault.sharePrice.toFixed(4)}`} sub="per ghLP" valueClass={vault.sharePrice > 1.00005 ? "text-pos" : vault.sharePrice < 0.99995 ? "text-neg" : ""} />
         <StatCard label="Idle liquidity" value={formatUsd(vault.idle, 0)} sub="withdrawable" />
@@ -45,7 +45,7 @@ export function VaultPage() {
         <StatCard label="Series written" value={formatNumber(vault.allSeries.length)} sub={`${vault.activeSeries.length} active`} />
       </div>
 
-      <div className="mt-6 grid gap-6 lg:grid-cols-[1fr_380px]">
+      <div className="mt-6 grid gap-6 xl:grid-cols-[1fr_380px]">
         <div className="panel min-w-0 p-4 sm:p-5">
           <h2 className="mb-3 font-semibold">Series written by the vault</h2>
           {vaultSeries.length === 0 ? (

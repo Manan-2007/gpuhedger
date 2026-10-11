@@ -15,7 +15,7 @@ export function StickyOrderBar({ total, targetId = "trade-panel" }: { total: num
 
   if (ticketVisible) return null;
   return (
-    <div className="fixed inset-x-0 bottom-0 z-30 border-t border-line bg-bg/95 p-3 backdrop-blur lg:hidden">
+    <div className="fixed inset-x-0 bottom-0 z-30 border-t border-line bg-bg/95 p-3 backdrop-blur lg:left-60 xl:hidden">
       <a href={`#${targetId}`} className="btn-primary w-full py-3">
         REVIEW ORDER · {formatUsd(total)}
       </a>

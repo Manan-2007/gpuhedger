@@ -94,6 +94,17 @@ if not "%CHAIN_ID%"=="31337" (
   exit /b 1
 )
 
+rem A restored chain resumes at the timestamp it was saved with. Jump it to the wall clock so expiries
+rem and "updated 5m ago" match real time (Monad testnet is always on real time).
+for /f "usebackq delims=" %%t in (`cast block latest --field timestamp --rpc-url %RPC%`) do set "CHAIN_TS=%%t"
+for /f "usebackq delims=" %%n in (`node -e "console.log(Math.floor(Date.now()/1000))"`) do set "NOW_TS=%%n"
+set /a LAG=NOW_TS-CHAIN_TS
+if %LAG% GTR 60 (
+  echo ^> Fast-forwarding the restored chain to the current time.
+  cast rpc evm_setNextBlockTimestamp %NOW_TS% --rpc-url %RPC% >nul
+  cast rpc evm_mine --rpc-url %RPC% >nul
+)
+
 set "NEED_DEPLOY=1"
 if exist "%DEPLOY_JSON%" (
   for /f "usebackq delims=" %%a in (`node -p "require('./frontend/src/contracts/deployments/31337.json').optionFactory"`) do set "FACTORY=%%a"

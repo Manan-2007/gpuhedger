@@ -104,7 +104,7 @@ export function PayoffChart(props: PayoffChartProps) {
         <Metric label="Current P&L" value={formatSignedUsd(pnlNowAtExpiry)} cls={pnlClass(pnlNowAtExpiry)} hint={`If settled at ${formatPrice(spot)} today`} />
       </div>
 
-      <div className="mt-4 flex flex-wrap items-center gap-x-5 gap-y-1 text-xs text-muted" aria-label="Legend">
+      <div className="mt-5 flex flex-wrap items-center gap-x-5 gap-y-1 font-mono text-[10.5px] uppercase tracking-[0.06em] text-muted" aria-label="Legend">
         <span className="flex items-center gap-2">
           <span className="h-0.5 w-5 bg-primary" /> P&L at expiry
         </span>
@@ -187,7 +187,7 @@ export function PayoffChart(props: PayoffChartProps) {
         </ResponsiveContainer>
       </div>
 
-      <div className="mt-3 rounded-lg border border-line bg-bg-deep/60 p-3">
+      <div className="mt-3 rounded-[4px] border border-line bg-bg p-3">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <label htmlFor="scenario" className="label">
             Scenario: {gpuLabel} price at expiry
@@ -223,7 +223,7 @@ function Metric({ label, value, cls = "", hint }: { label: string; value: string
   return (
     <div title={hint}>
       <div className="label">{label}</div>
-      <div className={`num mt-1 text-base font-semibold ${cls}`}>{value}</div>
+      <div className={`num mt-1 font-heading text-lg font-semibold tracking-tight ${cls}`}>{value}</div>
       {hint && <div className="mt-0.5 truncate text-[11px] text-dim">{hint}</div>}
     </div>
   );

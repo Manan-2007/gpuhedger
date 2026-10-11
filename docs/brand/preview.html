@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>GpuHedger logo directions</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@600;700&family=Inter:wght@400;500&family=Geist+Mono:wght@500&display=swap" rel="stylesheet" />
+<style>
+  /* Brand palette (same values as frontend/src/index.css tokens). */
+  :root {
+    --bg: #00161b; --card: #071a1f; --line: rgba(255,255,255,.10); --fg: rgba(255,255,255,.92); --muted: rgba(255,255,255,.62);
+    --lime: #c0f18e; --lime-top: #d9f7bb; --lime-right: #7f9e5d; --teal: #1d9e75; --ink: #00161b;
+    --light-bg: #f3f5f1;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--fg); font: 15px/1.5 Inter, system-ui, sans-serif; padding: 40px 32px 80px; }
+  h1 { font: 600 40px/1.05 "Inter Tight", sans-serif; letter-spacing: -0.03em; margin: 8px 0 6px; }
+  .label { font: 500 11px "Geist Mono", ui-monospace, monospace; text-transform: uppercase; letter-spacing: .1em; color: var(--muted); }
+  .intro { color: var(--muted); max-width: 760px; }
+  .grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; margin-top: 32px; }
+  @media (max-width: 1100px) { .grid { grid-template-columns: 1fr; } }
+  .dir { border: 1px solid var(--line); border-radius: 4px; background: var(--card); }
+  .dir header { padding: 18px 20px; border-bottom: 1px solid var(--line); }
+  .dir h2 { font: 600 22px "Inter Tight", sans-serif; letter-spacing: -.02em; margin: 6px 0 4px; }
+  .dir p { margin: 0; color: var(--muted); font-size: 13px; }
+  .hero { display: grid; place-items: center; padding: 28px 0; border-bottom: 1px solid var(--line); }
+  .row { display: flex; align-items: center; gap: 22px; padding: 16px 20px; border-bottom: 1px solid var(--line); flex-wrap: wrap; }
+  .row .label { width: 100%; }
+  .light { background: var(--light-bg); }
+  .light .label { color: #5b6b6e; }
+  .tealbg { background: var(--teal); }
+  .lockup { display: flex; align-items: center; gap: 10px; }
+  .word { font: 700 22px "Inter Tight", sans-serif; letter-spacing: -.03em; }
+  .word-mono { font: 500 15px "Geist Mono", monospace; letter-spacing: .12em; text-transform: uppercase; }
+  svg { display: block; }
+
+  /* Colour variants: each mark reads these variables. */
+  .v-brand { --c-top: var(--lime-top); --c-left: var(--lime); --c-right: var(--lime-right); --c-ink: var(--ink); --c-line: var(--lime); --c-soft: rgba(255,255,255,.55); --c-gap: var(--bg); }
+  .v-brand-light { --c-top: var(--lime-top); --c-left: #a9db74; --c-right: #5d7d3c; --c-ink: var(--ink); --c-line: #4f7f1f; --c-soft: #6b7a7d; --c-gap: var(--light-bg); }
+  .v-white { --c-top: #fff; --c-left: #fff; --c-right: #fff; --c-ink: var(--bg); --c-line: #fff; --c-soft: #fff; --c-gap: var(--bg); }
+  .v-dark { --c-top: var(--ink); --c-left: var(--ink); --c-right: var(--ink); --c-ink: var(--light-bg); --c-line: var(--ink); --c-soft: var(--ink); --c-gap: var(--light-bg); }
+  .v-lime-teal { --c-top: var(--lime); --c-left: var(--lime); --c-right: var(--lime); --c-ink: var(--teal); --c-line: var(--lime); --c-soft: var(--lime); --c-gap: var(--teal); }
+  .note { margin-top: 28px; color: var(--muted); font-size: 13px; max-width: 900px; }
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <!-- A. Payoff cube: an isometric cube; a capped-call payoff runs flat across the left face,
+         kinks at the front edge (the strike), climbs the right face and caps. -->
+    <symbol id="mark-a" viewBox="0 0 32 32">
+      <path d="M16 2.5 27.7 9.25 16 16 4.3 9.25Z" style="fill:var(--c-top)" />
+      <path d="M4.3 9.25 16 16v13.5L4.3 22.75Z" style="fill:var(--c-left)" />
+      <path d="M16 16 27.7 9.25v13.5L16 29.5Z" style="fill:var(--c-right)" />
+      <path d="M4.3 9.25 16 16 27.7 9.25M16 16v13.5" style="fill:none;stroke:var(--c-gap)" stroke-width=".9" stroke-linejoin="round" />
+      <path d="M6 21H14.5L19.5 14H26" style="fill:none;stroke:var(--c-ink)" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" />
+    </symbol>
+
+    <!-- B. G-stack: four isometric slabs stacked into a G; the top slab is the accent. -->
+    <symbol id="mark-b" viewBox="0 0 32 32">
+      <!-- bottom slab -->
+      <path d="M5 24.5h17l4-2.5H9Z" style="fill:var(--c-top)" opacity=".9" />
+      <path d="M5 24.5h17v3H5Z" style="fill:var(--c-right)" />
+      <path d="M22 24.5l4-2.5v3l-4 2.5Z" style="fill:var(--c-right)" opacity=".7" />
+      <!-- spine -->
+      <path d="M5 10.5h5v14H5Z" style="fill:var(--c-left)" />
+      <path d="M10 10.5l4-2.5v14l-4 2.5Z" style="fill:var(--c-right)" />
+      <!-- inner bar + jaw -->
+      <path d="M15 16.5h11l-4 2.5H11Z" style="fill:var(--c-top)" opacity=".9" />
+      <path d="M22 19h4v-2.5l-4 2.5Z" style="fill:var(--c-right)" />
+      <path d="M22 19h4v6.5h-4Z" style="fill:var(--c-left)" />
+      <!-- top slab (accent) -->
+      <path d="M9 4.5h17l-4 2.5H5Z" style="fill:var(--c-top)" />
+      <path d="M5 7h17v3.5H5Z" style="fill:var(--c-line)" />
+      <path d="M22 7l4-2.5V8l-4 2.5Z" style="fill:var(--c-right)" />
+    </symbol>
+
+    <!-- C. Bracket-H: an H whose crossbar is a payoff line, inside hedge brackets. -->
+    <symbol id="mark-c" viewBox="0 0 32 32">
+      <path d="M8 4.5H4v23h4M24 4.5h4v23h-4" style="fill:none;stroke:var(--c-soft)" stroke-width="2.4" stroke-linecap="square" />
+      <path d="M10.5 8v16M21.5 8v16" style="fill:none;stroke:var(--c-line)" stroke-width="2.8" stroke-linecap="round" />
+      <path d="M10.5 18H14l3.6-4h3.9" style="fill:none;stroke:var(--c-line)" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" />
+    </symbol>
+  </defs>
+</svg>
+
+<div class="label">GpuHedger · brand</div>
+<h1>Logo directions</h1>
+<p class="intro">Three original marks, each built for 16px first. Every direction is shown in full colour on dark and light, then in
+single colour (white on dark, dark on light, lime on teal) to prove it survives without tints. Pick one and I'll produce the full
+asset set.</p>
+
+<div class="grid" id="grid"></div>
+
+<p class="note">All three are drawn from scratch for GpuHedger: geometric primitives (cube, slabs, brackets) and our own payoff
+curve. None uses the Monad or Metropolis marks, and none is a chip, lock or shield. The wordmark is set in Inter Tight (heading) or
+Geist Mono (mono). After you pick, the mark gets pixel-snapped variants for 16px and the lockup gets optically kerned.</p>
+
+<script>
+  const DIRS = [
+    ["a", "A · Payoff cube", "An isometric cube; the capped-call payoff runs flat, kinks at the strike edge, climbs and caps. Reads as “compute block” plus “hedge”."],
+    ["b", "B · G-stack", "Isometric slabs stacked into a G, top slab in lime. Most architectural; echoes the iso art system, weakest at 16px."],
+    ["c", "C · Bracket-H", "An H whose crossbar is the payoff line, inside hedge brackets. Flat and crisp: the most legible at 16px and in one colour."],
+  ];
+  const mark = (id, size, variant) =>
+    `<svg width="${size}" height="${size}" class="${variant}" role="img" aria-label="GpuHedger mark"><use href="#mark-${id}"/></svg>`;
+  document.getElementById("grid").innerHTML = DIRS.map(([id, name, desc]) => `
+    <section class="dir">
+      <header><div class="label">Direction</div><h2>${name}</h2><p>${desc}</p></header>
+      <div class="hero">${mark(id, 256, "v-brand")}</div>
+      <div class="row"><div class="label">Dark · 16 / 32 / 64</div>${mark(id, 16, "v-brand")}${mark(id, 32, "v-brand")}${mark(id, 64, "v-brand")}</div>
+      <div class="row light"><div class="label">Light · 16 / 32 / 64</div>${mark(id, 16, "v-brand-light")}${mark(id, 32, "v-brand-light")}${mark(id, 64, "v-brand-light")}</div>
+      <div class="row"><div class="label">Single colour · white</div>${mark(id, 16, "v-white")}${mark(id, 32, "v-white")}${mark(id, 64, "v-white")}</div>
+      <div class="row light"><div class="label">Single colour · dark</div>${mark(id, 16, "v-dark")}${mark(id, 32, "v-dark")}${mark(id, 64, "v-dark")}</div>
+      <div class="row tealbg"><div class="label" style="color:#0a2a20">Lime on teal</div>${mark(id, 32, "v-lime-teal")}${mark(id, 64, "v-lime-teal")}</div>
+      <div class="row"><div class="label">Lockups</div>
+        <div class="lockup">${mark(id, 32, "v-brand")}<span class="word">GpuHedger</span></div>
+        <div class="lockup">${mark(id, 28, "v-brand")}<span class="word-mono">GpuHedger</span></div>
+      </div>
+      <div class="row light"><div class="lockup">${mark(id, 32, "v-brand-light")}<span class="word" style="color:#00161b">GpuHedger</span></div></div>
+    </section>`).join("");
+</script>
+</body>
+</html>
