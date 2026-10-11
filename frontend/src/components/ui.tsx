@@ -4,6 +4,7 @@ import type { OptionKind } from "../types/options";
 import { addressUrl, txUrl } from "../lib/chain";
 import { formatDuration, formatSignedUsd, shortAddress, shortHash, timeAgo } from "../utils/formatters";
 import { useNow } from "../hooks/useNow";
+import { Card, Stat } from "./primitives";
 
 /** Mark: a GPU die carrying a capped payoff curve (flat, then protected, then capped): the product in one glyph. */
 export function LogoMark({ size = 28, className = "" }: { size?: number; className?: string }) {
@@ -74,14 +75,9 @@ export function StatCard({
   tag?: ReactNode;
 }) {
   return (
-    <div className="panel p-4">
-      <div className="flex items-center justify-between gap-2">
-        <span className="label">{label}</span>
-        {tag}
-      </div>
-      <div className={`num mt-2 text-xl font-semibold sm:text-2xl ${valueClass}`}>{value}</div>
-      {sub && <div className="mt-1 text-xs text-muted">{sub}</div>}
-    </div>
+    <Card className="p-4">
+      <Stat label={label} value={value} sub={sub} valueClass={valueClass} tag={tag} />
+    </Card>
   );
 }
 
@@ -136,24 +132,10 @@ export function Ago({ timestamp, className = "" }: { timestamp: number; classNam
 }
 
 export function Skeleton({ className = "" }: { className?: string }) {
-  return <div className={`animate-pulse rounded-md bg-panel-2 ${className}`} />;
+  return <div className={`animate-pulse rounded-[4px] bg-panel-2 ${className}`} />;
 }
 
-export function EmptyState({ title, body, action }: { title: string; body?: ReactNode; action?: ReactNode }) {
-  return (
-    <div className="panel flex flex-col items-center justify-center px-6 py-14 text-center">
-      <div className="mb-3 grid h-11 w-11 place-items-center rounded-full border border-line-2 text-dim">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-          <rect x="4" y="4" width="16" height="16" rx="2" />
-          <path d="M9 9h6v6H9z" />
-        </svg>
-      </div>
-      <h3 className="font-semibold">{title}</h3>
-      {body && <p className="mt-1 max-w-md text-sm text-muted">{body}</p>}
-      {action && <div className="mt-5">{action}</div>}
-    </div>
-  );
-}
+export { EmptyState } from "./primitives";
 
 export function ErrorNote({ children }: { children: ReactNode }) {
   return (
@@ -176,17 +158,7 @@ export function OracleUnavailable({ gpu, className = "" }: { gpu?: string; class
   );
 }
 
-export function SectionHeader({ eyebrow, title, children }: { eyebrow?: string; title: ReactNode; children?: ReactNode }) {
-  return (
-    <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-      <div>
-        {eyebrow && <div className="label mb-2 text-primary">{eyebrow}</div>}
-        <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">{title}</h1>
-      </div>
-      {children}
-    </div>
-  );
-}
+export { SectionHeader } from "./primitives";
 
 export function Spinner({ className = "h-4 w-4" }: { className?: string }) {
   return (

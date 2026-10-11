@@ -117,6 +117,16 @@ fi
 CHAIN_ID="$(cast chain-id --rpc-url "$RPC")"
 [ "$CHAIN_ID" = "31337" ] || die "Something else is running on port 8545 (chain $CHAIN_ID). Stop it and try again."
 
+# A restored chain resumes at the timestamp it was saved with. Jump it to the wall clock so expiries,
+# "updated 5m ago" and the activity feed match real time (Monad testnet is always on real time).
+CHAIN_TS="$(cast block latest --field timestamp --rpc-url "$RPC")"
+NOW_TS="$(date +%s)"
+if [ "$CHAIN_TS" -lt $((NOW_TS - 60)) ]; then
+  say "Fast-forwarding the restored chain to the current time."
+  cast rpc evm_setNextBlockTimestamp "$NOW_TS" --rpc-url "$RPC" >/dev/null
+  cast rpc evm_mine --rpc-url "$RPC" >/dev/null
+fi
+
 NEED_DEPLOY=1
 if [ -f "$DEPLOY_JSON" ]; then
   FACTORY="$(node -p "require('./$DEPLOY_JSON').optionFactory")"

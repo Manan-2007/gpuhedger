@@ -16,11 +16,13 @@ export function useBlockTime() {
     refetchInterval: 30_000,
     queryFn: async () => {
       const latest = await client!.getBlock();
-      if (latest.number < SAMPLE) return undefined;
+      if (latest.number < SAMPLE) return null;
       const past = await client!.getBlock({ blockNumber: latest.number - SAMPLE });
       const seconds = Number(latest.timestamp - past.timestamp) / Number(SAMPLE);
+      // A window that spans a time jump (a restored local chain fast-forwarded to now) isn't a block time.
+      if (seconds <= 0 || seconds > 30) return null;
       return { ms: Math.round(seconds * 1000), blocks: Number(SAMPLE), latest: latest.number };
     },
   });
-  return { blockTime: query.data, isLoading: query.isLoading };
+  return { blockTime: query.data ?? undefined, isLoading: query.isLoading };
 }

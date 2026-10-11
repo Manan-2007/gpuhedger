@@ -5,6 +5,7 @@ import { useQuery } from "@tanstack/react-query";
 import { activeChain } from "./lib/chain";
 import { syncChainClock } from "./lib/clock";
 import { Navbar } from "./components/Navbar";
+import { AppShell } from "./components/AppShell";
 import { Footer } from "./components/Footer";
 import { useMockWallet } from "./lib/wagmi";
 import { Skeleton } from "./components/ui";
@@ -65,32 +66,49 @@ function MockAutoConnect() {
   return null;
 }
 
-export function App() {
+function AppRoutes() {
   return (
-    <div className="flex min-h-screen flex-col">
+    <Suspense fallback={<PageFallback />}>
+      <Routes>
+        <Route path="/" element={<LandingPage />} />
+        <Route path="/markets" element={<MarketsPage />} />
+        <Route path="/markets/:id" element={<MarketDetailPage />} />
+        <Route path="/trade" element={<TradePage />} />
+        <Route path="/hedge" element={<HedgePage />} />
+        <Route path="/futures" element={<FuturesPage />} />
+        <Route path="/vault" element={<VaultPage />} />
+        <Route path="/activity" element={<ActivityPage />} />
+        <Route path="/portfolio" element={<PortfolioPage />} />
+        <Route path="/admin" element={<AdminPage />} />
+        <Route path="/docs" element={<DocsPage />} />
+        <Route path="*" element={<NotFoundPage />} />
+      </Routes>
+    </Suspense>
+  );
+}
+
+export function App() {
+  const { pathname } = useLocation();
+  // The landing page is a full-width marketing layout; every app route gets the sidebar shell.
+  const landing = pathname === "/";
+  return (
+    <>
       <ScrollToTop />
       <MockAutoConnect />
       <ChainClockSync />
-      <Navbar />
-      <main className="flex-1">
-        <Suspense fallback={<PageFallback />}>
-          <Routes>
-            <Route path="/" element={<LandingPage />} />
-            <Route path="/markets" element={<MarketsPage />} />
-            <Route path="/markets/:id" element={<MarketDetailPage />} />
-            <Route path="/trade" element={<TradePage />} />
-            <Route path="/hedge" element={<HedgePage />} />
-            <Route path="/futures" element={<FuturesPage />} />
-            <Route path="/vault" element={<VaultPage />} />
-            <Route path="/activity" element={<ActivityPage />} />
-            <Route path="/portfolio" element={<PortfolioPage />} />
-            <Route path="/admin" element={<AdminPage />} />
-            <Route path="/docs" element={<DocsPage />} />
-            <Route path="*" element={<NotFoundPage />} />
-          </Routes>
-        </Suspense>
-      </main>
-      <Footer />
-    </div>
+      {landing ? (
+        <div className="flex min-h-screen flex-col">
+          <Navbar />
+          <main className="flex-1">
+            <AppRoutes />
+          </main>
+          <Footer />
+        </div>
+      ) : (
+        <AppShell>
+          <AppRoutes />
+        </AppShell>
+      )}
+    </>
   );
 }
